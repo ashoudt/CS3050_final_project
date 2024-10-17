@@ -24,7 +24,7 @@ class Card(arcade.Sprite):
         self.value = value
 
         # TODO: Needs to hold the correct value/image for the card
-        # self.image_file_name = f":assets:board game pieces/clue cards/ballroom.png"
+        # self.image_file_name = f":assets:clue cards/{self.value}.png"
         self.image_filename = r"assets/clue cards/ballroom.png"
 
         # Call the parent class from Python Arcade
@@ -34,6 +34,7 @@ class Card(arcade.Sprite):
 # A Deck Class that creates the decks for the AIs and the Player
 class Deck:
     def __init__(self):
+
         self.held_cards = []
         self.all_cards = []
         self.all_decks = []
@@ -106,6 +107,7 @@ class Deck:
         # Set the position of the cards on the screen (player vs. NPC)
         # Choose whether the card is facing up or down
         # Draw the cards on the screen
+
 
 # Main (for testing purposes)
 # def main():
