@@ -1,8 +1,9 @@
 import arcade
+import player
 
-# Set number of rows and columns for the board
-ROW_COUNT = 25
-COLUMN_COUNT = 25
+# Set number of rows and columns for the board grid
+ROW_COUNT = 24
+COLUMN_COUNT = 24
 
 # Set width and height of each grid cell
 WIDTH = 30
@@ -12,28 +13,25 @@ HEIGHT = 30
 MARGIN = 2
 
 # Screen dimensions
-SCREEN_WIDTH = ((WIDTH + MARGIN) * COLUMN_COUNT + MARGIN) * 1.5
-SCREEN_HEIGHT = (HEIGHT + MARGIN) * ROW_COUNT + MARGIN
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 900
 SCREEN_TITLE = "Clue Game Board with Piece Movement"
 
-# Calculate board size to take up RESIZE of the screen
-RESIZE = 0.75
-BOARD_WIDTH = SCREEN_WIDTH * (RESIZE * 0.8) 
-BOARD_HEIGHT = SCREEN_HEIGHT * RESIZE
+# Board should take up 70% of the screen height (square shape)
+BOARD_SIZE = SCREEN_HEIGHT * 0.7
 
-# Calculate scale factor for grid cells to fit into 75% screen area
-scale_x = BOARD_WIDTH / ((WIDTH + MARGIN) * COLUMN_COUNT + MARGIN)
-scale_y = BOARD_HEIGHT / ((HEIGHT + MARGIN) * ROW_COUNT + MARGIN)
+# Movement speed (move by one tile at a time)
+MOVEMENT_SPEED = WIDTH + MARGIN
 
-# Use the minimum scale to ensure it fits within the board space
-scale = min(scale_x, scale_y)
 
-# Calculate the board position to center it
-board_left = (SCREEN_WIDTH - BOARD_WIDTH) / 2
-board_bottom = (SCREEN_HEIGHT - BOARD_HEIGHT) / 2
-
-# Movement grid speed (move by one tile at a time)
-MOVEMENT_SPEED = int((WIDTH + MARGIN) * scale)
+class Room:
+    def __init__(self, name, boundaries):
+        """
+        Create a room with a given name and boundaries.
+        Boundaries should be a list of tuples [(row_start, row_end, col_start, col_end)].
+        """
+        self.name = name
+        self.boundaries = boundaries
 
 class Board(arcade.Window):
     def __init__(self, width, height, title):
@@ -45,27 +43,41 @@ class Board(arcade.Window):
         # Load the Clue board image as the background
         self.background_texture = arcade.load_texture("ClueBoard.jpeg")
 
-        # Calculate the dimensions of the background texture to fit 75% of the screen
-        self.board_width = BOARD_WIDTH
-        self.board_height = BOARD_HEIGHT
+        # Set the scaling of the board to fit into a square area
+        self.board_size = BOARD_SIZE
 
-        # Load the player's piece sprite from the assets folder
+        # Center the board on the screen
+        self.board_center_x = SCREEN_WIDTH // 2
+        self.board_center_y = SCREEN_HEIGHT // 2
+
+        # Create the rooms with boundaries
+        self.rooms = [
+            Room("Conservatory", [(0, 4, 0, 5)]),
+            Room("Billiards Room", [(7, 11, 0, 5)]),
+            Room("Library", [(14, 16, 0, 0), (14, 16, 6, 6), (13, 17, 1, 5)]),
+            Room("Study", [(20, 23, 0, 6)]),
+            Room("Hall", [(17, 23, 9, 14)]),
+            Room("Lounge", [(18, 23, 17, 23)]),
+            Room("Dining Room", [(9, 14, 16, 23), (8, 8, 19, 23)]),
+            Room("Kitchen", [(0, 5, 18, 23)]),
+            Room("Ball Room", [(1, 6, 8, 15), (0, 0, 10, 12)]),
+            Room("Lobby", [(9, 15, 9, 13)])
+        ]
+
+        # Define doors for the rooms
+        self.doors = [
+            (4, 5), (12, 1), (8, 6), (12, 3), (15,7), (19,6), (19,8),
+            (16,11), (16,12), (17,17), (15,17), (11,15), (6,19), 
+            (4,16), (7,14), (7,9), (4,7)
+        ]
+
+        # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
-        self.player_piece = arcade.Sprite(piece_image, scale)
-
-        # Set the initial position of the piece on a grid tile (center of the board)
-        start_row = 1.4
-        start_column = 11.3
-        self.player_piece.center_x = board_left + start_column * (WIDTH + MARGIN) * scale + (WIDTH / 2 + MARGIN) * scale
-        self.player_piece.center_y = board_bottom + start_row * (HEIGHT + MARGIN) * scale + (HEIGHT / 2 + MARGIN) * scale
+        self.player_piece = player.Player(piece_image, 0.5, 8, 8, self.board_size, self.board_center_x, self.board_center_y)
 
         # List for all sprites (in this case, just the player)
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.player_piece)
-
-        # Store the player's current position in terms of grid row and column
-        self.player_row = start_row
-        self.player_column = start_column
 
     def on_draw(self):
         """
@@ -74,9 +86,9 @@ class Board(arcade.Window):
         # Clear the screen
         self.clear()
 
-        # Draw the Clue board background, scaled and centered to 75% of the screen
-        arcade.draw_texture_rectangle(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
-                                      self.board_width, self.board_height,
+        # Draw the Clue board in the center of the window
+        arcade.draw_texture_rectangle(self.board_center_x, self.board_center_y,
+                                      self.board_size, self.board_size,
                                       self.background_texture)
 
         # Draw the player's piece on the board
@@ -86,30 +98,21 @@ class Board(arcade.Window):
         """
         Handle player movement using arrow keys.
         """
-        if key == arcade.key.UP and self.player_row < ROW_COUNT - 1:
-            self.player_row += 1
-        elif key == arcade.key.DOWN and self.player_row > 0:
-            self.player_row -= 1
-        elif key == arcade.key.LEFT and self.player_column > 0:
-            self.player_column -= 1
-        elif key == arcade.key.RIGHT and self.player_column < COLUMN_COUNT - 1:
-            self.player_column += 1
+        if key == arcade.key.UP:
+            self.player_piece.move(1, 0, self.rooms, self.doors)
+        elif key == arcade.key.DOWN:
+            self.player_piece.move(-1, 0, self.rooms, self.doors)
+        elif key == arcade.key.LEFT:
+            self.player_piece.move(0, -1, self.rooms, self.doors)
+        elif key == arcade.key.RIGHT:
+            self.player_piece.move(0, 1, self.rooms, self.doors)
 
-        # Update the position of the player's piece based on the new row and column
-        self.player_piece.center_x = board_left + self.player_column * (WIDTH + MARGIN) * scale + (WIDTH / 2 + MARGIN) * scale
-        self.player_piece.center_y = board_bottom + self.player_row * (HEIGHT + MARGIN) * scale + (HEIGHT / 2 + MARGIN) * scale
-
-    def update(self, delta_time):
-        """
-        Update method to run logic.
-        """
-        # TODO: collision detection, etc. here 
-        pass
 
 def main():
     # Initialize the game window
     Board(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     arcade.run()
+
 
 if __name__ == "__main__":
     main()
