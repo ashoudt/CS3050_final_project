@@ -59,7 +59,7 @@ class Deck:
         self.choose_killer(self.all_cards, self.killer_cards)
 
         # Put cards into piles based on the number of players
-        deck_size = int(TOTAL_GAME_CARDS / num_players)
+        deck_size = int(TOTAL_GAME_CARDS / num_players)  # Game cards excludes the three killer cards
         extra_cards = TOTAL_GAME_CARDS - (deck_size * num_players)
         temp_deck = []
 
@@ -81,6 +81,10 @@ class Deck:
         # TODO: Assign decks to NPCs and Player
 
         # Print cards in each deck (for testing purposes)
+        print("KILLER\n****")
+        for card in self.killer_cards:
+            print(card.value)
+        print("****")
         print("\nDECK SIZE:", deck_size)
         for deck in self.all_decks:
             print("****")
@@ -95,12 +99,15 @@ class Deck:
         for card in all_cards:
             if card.card_type == "Suspect" and not suspect:
                 killer_cards.append(card)
+                all_cards.remove(card)
                 suspect = True
             elif card.card_type == "Weapon" and not weapon:
                 killer_cards.append(card)
+                all_cards.remove(card)
                 weapon = True
             elif card.card_type == "Room" and not room:
                 killer_cards.append(card)
+                all_cards.remove(card)
                 room = True
 
     # TODO: Implement visuals
@@ -108,13 +115,24 @@ class Deck:
         # Choose whether the card is facing up or down
         # Draw the cards on the screen
 
+    def on_draw(self):
+        """ Render the screen. """
+        # Clear the screen
+        self.clear()
+
+        # Draw the mats the cards go on to
+        self.pile_mat_list.draw()
+
+        # Draw the cards
+        self.card_list.draw()
+
 
 # Main (for testing purposes)
-# def main():
-#     num_players = 4
-#     deck = Deck()
-#     deck.deal(num_players)
-#
-#
-# if __name__ == "__main__":
-#     main()
+def main():
+    num_players = 4
+    deck = Deck()
+    deck.deal(num_players)
+
+
+if __name__ == "__main__":
+    main()
