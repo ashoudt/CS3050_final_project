@@ -1,5 +1,6 @@
 import arcade
 import player
+from ui_elements import GameUI
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -79,6 +80,13 @@ class Board(arcade.Window):
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.player_piece)
 
+        # Create UI manager for buttons and notesheet
+        self.ui_manager = arcade.gui.UIManager()
+        self.ui_manager.enable()
+
+         # Create the GameUI instance
+        self.game_ui = GameUI(self.ui_manager)
+
     def on_draw(self):
         """
         Render the screen.
@@ -93,6 +101,9 @@ class Board(arcade.Window):
 
         # Draw the player's piece on the board
         self.all_sprites.draw()
+
+        # Draw UI elements
+        self.ui_manager.draw()
 
     def on_key_press(self, key, modifiers):
         """
