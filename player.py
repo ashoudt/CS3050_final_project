@@ -38,7 +38,6 @@ class Player(arcade.Sprite):
         self.center_x = board_bottom_left_x + (cell_width * self.column) + (cell_width / 2)
         self.center_y = board_bottom_left_y + (cell_height * self.row) + (cell_height / 2)
 
-
     
     def move(self, d_row, d_column, rooms, doors):
         """Move the player by a row or column delta, but check room boundaries and door access."""
@@ -54,8 +53,8 @@ class Player(arcade.Sprite):
             return
 
         # Check if the player is attempting to enter or exit a room through a non-door point
-        current_in_room = self.check_room_collision(self.row, self.column, rooms)
-        new_in_room = self.check_room_collision(new_row, new_column, rooms)
+        current_in_room, current_room = self.check_room_collision(self.row, self.column, rooms)
+        new_in_room, new_room = self.check_room_collision(new_row, new_column, rooms)
 
         if current_in_room and not new_in_room or not current_in_room and new_in_room:
             # Allow movement only through doors when changing from room to outside or vice versa
@@ -67,7 +66,7 @@ class Player(arcade.Sprite):
             return
 
         # Free movement within the same space (either inside a room or outside)
-        if current_in_room == new_in_room:
+        if current_in_room == new_in_room and current_room == new_room:
             self.row = new_row
             self.column = new_column
             print(f"ROAM ROW: {self.row}, COL: {self.column}\n")
@@ -78,13 +77,6 @@ class Player(arcade.Sprite):
         for room in rooms:
             for row_start, row_end, col_start, col_end in room.boundaries:
                 if row_start <= new_row <= row_end and col_start <= new_column <= col_end:
-                    return True  # Valid move within a room
-        return False  # Invalid move through a wall
+                    return True, room  # Valid move within a room
+        return False, None  # Invalid move through a wall
 
-    
-    def check_door_access(self, new_row, new_column, doors):
-        """Check if the player is at a door location."""
-        for door in doors:
-            if door[0] == new_row and door[1] == new_column:
-                return True  # Valid move through a door
-        return False  # Block the move if it's not a door
