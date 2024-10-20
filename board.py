@@ -1,6 +1,7 @@
 import arcade
 import player
 from ui_elements import GameUI
+from deck import Deck
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -18,8 +19,8 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 750
 SCREEN_TITLE = "Clue Game Board with Piece Movement"
 
-# Board should take up 70% of the screen height (square shape)
-BOARD_SIZE = SCREEN_HEIGHT * 0.7
+# Board should take up 65% of the screen height (square shape)
+BOARD_SIZE = SCREEN_HEIGHT * 0.65
 
 # Movement speed (move by one tile at a time)
 MOVEMENT_SPEED = WIDTH + MARGIN
@@ -83,9 +84,57 @@ class Board(arcade.Window):
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
         self.player_piece = player.Player(piece_image, 0.4, 0, 7, self.board_size, self.board_center_x, self.board_center_y)
 
-        # List for all sprites (in this case, just the player)
+
+        #Create the deck and deal out the cards
+        self.deck = Deck()
+        self.num_players = 4
+        self.deck.deal(self.num_players)
+        self.all_decks = self.deck.get_all_cards()
+
+        self.card_horizontal_padding = 300  # padding for horizontal edges of the screen
+        self.card_vertical_padding = 150  # padding for vertical  edges of the screen
+
+        # Position cards on the screen
+        for deck in self.all_decks:
+            card_space = (SCREEN_WIDTH - (self.card_horizontal_padding * 2)) / len(deck)  # divide remaining space among cards
+            current_card_space = 0  # number of cards already on this part of the screen
+
+            # Position for cards on the screen (padding + # cards on screen + center of next card space)
+            changing_pos = int(self.card_horizontal_padding + current_card_space + (card_space / 2))
+            vertical_changing_pos = int(self.card_vertical_padding + current_card_space + (card_space / 2))
+
+            # Distance from the outer edge of the screen
+            static_pos = 60
+            # Currently have more horizontal space than vertical
+            horizontal_offset = 40
+
+            for card in deck:
+                # BOTTOM HORIZONTAL (Player)
+                if deck == self.all_decks[0]:
+                    card.position = changing_pos, static_pos
+                # LEFT VERTICAL
+                elif deck == self.all_decks[1]:
+                    card.position = static_pos + horizontal_offset, vertical_changing_pos
+                # RIGHT VERTICAL
+                elif deck == self.all_decks[2]:
+                    card.position = SCREEN_WIDTH - static_pos - horizontal_offset, vertical_changing_pos
+                # TOP HORIZONTAL
+                elif deck == self.all_decks[3]:
+                    card.position = changing_pos, SCREEN_HEIGHT - static_pos
+                # STACK IN CORNER
+                else:
+                    # TODO: Print a pile in the corners (once final screen size is determined)
+                    pass
+                changing_pos += card_space
+                vertical_changing_pos += card_space
+
+        # List for all sprites (in this case, just the player and cards)
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.player_piece)
+        for self.playerDeck in self.all_decks:
+            for self.card in self.playerDeck:
+                self.all_sprites.append(self.card)
+
 
         # Create UI manager for buttons and notesheet
         self.ui_manager = arcade.gui.UIManager()
@@ -93,6 +142,7 @@ class Board(arcade.Window):
 
          # Create the GameUI instance
         self.game_ui = GameUI(self.ui_manager)
+
 
     def on_draw(self):
         """
@@ -106,11 +156,12 @@ class Board(arcade.Window):
                                       self.board_size, self.board_size,
                                       self.background_texture)
 
-        # Draw the player's piece on the board
+        # Draw the player's piece on the board and the cards
         self.all_sprites.draw()
 
         # Draw UI elements
         self.ui_manager.draw()
+
 
     def on_key_press(self, key, modifiers):
         """
@@ -125,12 +176,8 @@ class Board(arcade.Window):
         elif key == arcade.key.RIGHT:
             self.player_piece.move(0, 1, self.rooms, self.doors)
 
+    def get_decks(self):
+        return self.all_decks
 
-def main():
-    # Initialize the game window
-    Board(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
-    arcade.run()
-
-
-if __name__ == "__main__":
-    main()
+    def get_killer(self):
+        return self.deck.get_killer()

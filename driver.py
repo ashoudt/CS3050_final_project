@@ -1,8 +1,9 @@
-from deck import SUSPECT_CARD_VALUES, WEAPON_CARD_VALUES, ROOM_CARD_VALUES
-VALID_SUSPECTS = SUSPECT_CARD_VALUES.copy()
-VALID_WEAPONS = WEAPON_CARD_VALUES.copy()
-VALID_ROOMS = ROOM_CARD_VALUES.copy()
-import random
+from board import Board
+import arcade
+# Screen dimensions
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 750
+SCREEN_TITLE = "Clue Game Board with Piece Movement"
 
 '''
 pseudocode for main game loop
@@ -63,6 +64,9 @@ while not game is over
 
 
 def playerIsActing(action):
+    '''
+    Test text-based code, will be replaced with buttons
+
     playerIsActing = ""
     while playerIsActing != "y" and playerIsActing != "n":
         playerIsActing = input(f"Do you wish to {action} this turn? (y/n)\n")
@@ -72,9 +76,13 @@ def playerIsActing(action):
         return True
     else:
         return False
+    '''
 
 
 def guess():
+    '''
+    Test text-based code, the logic is useful but we aren't planning on using text in the final product
+
     guessedSuspect = ""
     while guessedSuspect not in VALID_SUSPECTS:
         guessedSuspect = input("Guess a suspect: ")
@@ -91,51 +99,44 @@ def guess():
         if guessedRoom not in VALID_ROOMS:
             print("Invalid input")
     return guessedSuspect, guessedWeapon, guessedRoom
+    '''
 
 
 def main():
-    #display the board
+    board = Board(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    decks = board.get_decks()
+    killer_cards = board.get_killer()
+    arcade.run()
     GAME_IS_OVER = False
     PLAYER_WON = False
     PLAYERS_TURN = True
-    numberOfTurns = 1
-    random.shuffle(SUSPECT_CARD_VALUES)
-    random.shuffle(WEAPON_CARD_VALUES)
-    random.shuffle(ROOM_CARD_VALUES)
-    solution = [SUSPECT_CARD_VALUES.pop(), WEAPON_CARD_VALUES.pop(), ROOM_CARD_VALUES.pop()]
-    dealtCards = SUSPECT_CARD_VALUES + WEAPON_CARD_VALUES + ROOM_CARD_VALUES
-    playerCards = []
-    for i in range(0, 4):
-        playerCards.append(dealtCards.pop(random.randint(0, len(dealtCards) - 1)))
-    print("Your cards are:")
-    for card in playerCards:
-        print(card)
     while not GAME_IS_OVER:
         while PLAYERS_TURN:
-            print(f"It's turn #{numberOfTurns}")
-            if playerIsActing("move"):
-                # give control to the player
-                pass
-
-            # if player in a room
-            if playerIsActing("make a suggestion"):
-                guessedSuspect, guessedWeapon, guessedRoom = guess()
-                if guessedSuspect not in dealtCards and guessedWeapon not in dealtCards and guessedRoom not in dealtCards:
-                    print("No one can give you any new information")
-                else:
-                    if guessedSuspect in dealtCards:
-                        print("Someone else has", guessedSuspect)
-                    elif guessedWeapon in dealtCards:
-                        print("Someone else has", guessedWeapon)
-                    elif guessedRoom in dealtCards:
-                        print("Someone else has", guessedRoom)
+            '''
+            Not all of this code is still accurate, but it's a template for how the game should operate
+            '''
+            #if move button is pressed
+                #give the player control
+                # if player not in a room
+                #disable suggestion and accusation buttons
+            #if suggestion button is pressed
+                #guessedSuspect, guessedWeapon, guessedRoom = guess()
+                #if guessedSuspect not in decks and guessedWeapon not in dealtCards and guessedRoom not in dealtCards:
+                    #print("No one can give you any new information")
+                #else
+                    #if guessedSuspect in dealtCards:
+                        #print("Someone else has", guessedSuspect)
+                    #elif guessedWeapon in dealtCards:
+                        #print("Someone else has", guessedWeapon)
+                    #elif guessedRoom in dealtCards:
+                        #print("Someone else has", guessedRoom)
 
             # if player in the final room
-            if playerIsActing("make an accusation"):
-                guessedSuspect, guessedWeapon, guessedRoom = guess()
-                if solution == [guessedSuspect, guessedWeapon, guessedRoom]:
-                    PLAYER_WON = True
-                GAME_IS_OVER = True
+            #if playerIsActing("make an accusation"):
+                #guessedSuspect, guessedWeapon, guessedRoom = guess()
+                #if solution == [guessedSuspect, guessedWeapon, guessedRoom]:
+                    #PLAYER_WON = True
+                #GAME_IS_OVER = True
             PLAYERS_TURN = False
         while not PLAYERS_TURN:
             PLAYERS_TURN = True
