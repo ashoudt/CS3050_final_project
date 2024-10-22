@@ -3,8 +3,9 @@ import random
 import arcade
 
 # ***Define our constants (size of assets/values)***
-CARD_WIDTH = 100
-CARD_HEIGHT = 115
+CARD_WIDTH = 108
+CARD_HEIGHT = 124
+CARD_SCALE = 0.75
 
 TOTAL_CARDS = 21
 TOTAL_GAME_CARDS = 18  # removed the 3 murderer cards
@@ -20,9 +21,12 @@ CARD_BACK_IMAGE = r"assets/clue cards/cardBack.png"
 # A Card Class that keeps track of what type of card it is
 # (suspect, weapon, or room), what value that card holds, and the image
 class Card(arcade.Sprite):
-    def __init__(self, card_type, value, scale=1):
+    def __init__(self, card_type, value, scale):
         self.card_type = card_type
         self.value = value
+
+        self.card_width = CARD_WIDTH * scale
+        self.card_height = CARD_HEIGHT * scale
 
         # Set asset based on card value
         self.image_filename = f"assets/clue cards/{self.value.lower().replace(' ', '')}.png"
@@ -57,13 +61,13 @@ class Deck:
     def deal(self, num_players):
         # Create all the cards in the game
         for i in range(6):
-            suspect_card = Card("Suspect", SUSPECT_CARD_VALUES[i], 1)
+            suspect_card = Card("Suspect", SUSPECT_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(suspect_card)
             self.all_sprites.append(suspect_card)
-            weapon_card = Card("Weapon", WEAPON_CARD_VALUES[i], 1)
+            weapon_card = Card("Weapon", WEAPON_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(weapon_card)
         for i in range(9):
-            room_card = Card("Room", ROOM_CARD_VALUES[i], 1)
+            room_card = Card("Room", ROOM_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(room_card)
 
         # Shuffle the cards

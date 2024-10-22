@@ -25,31 +25,34 @@ class GameUI:
         }
 
         # Create a vertical BoxGroup to align buttons
-        self.v_box = arcade.gui.UIBoxLayout()
+        self.h_box = arcade.gui.UIBoxLayout(vertical=False)
 
         # Create buttons
-        suggestion_button = arcade.gui.UIFlatButton(text="Suggestion", width=200, style=default_style)
-        self.v_box.add(suggestion_button.with_space_around(bottom=20))
-        accusation_button = arcade.gui.UIFlatButton(text="Accusation", width=200, style=default_style)
-        self.v_box.add(accusation_button.with_space_around(bottom=100))
-        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200)
-        move_button = arcade.gui.UIFlatButton(text="Move", width=200)
+        #suggestion_button = arcade.gui.UIFlatButton(text="Suggestion", width=200, style=default_style)
+        #self.v_box.add(suggestion_button.with_space_around(bottom=20))
+        #accusation_button = arcade.gui.UIFlatButton(text="Accusation", width=200, style=default_style)
+        #self.v_box.add(accusation_button.with_space_around(bottom=100))
+        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
+        self.h_box.add(notesheet_button.with_space_around(right=60))
+        roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=default_style)
+        self.h_box.add(roll_button.with_space_around(left=60))
+
 
         # Create an editable test area for the notesheet
         self.notesheet = arcade.gui.UIInputText(text="Input Notes:", width=400, height=600)
 
         # Handle click events
-        suggestion_button.on_click = self.on_click_start
-        accusation_button.on_click = self.on_click_start
+        notesheet_button.on_click = self.on_click_start
+        roll_button.on_click = self.on_click_start
 
         # Create a widget to hold the v_box widget, that will center the buttons
         self.manager.add(
             arcade.gui.UIAnchorWidget(
                 anchor_x="center_x",
-                align_x=-475,
+                align_x=-100,
                 anchor_y="center_y",
-                align_y=-350,
-                child=self.v_box)
+                align_y=-335,
+                child=self.h_box)
         )
 
     def on_click_start(self, event):
