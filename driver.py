@@ -171,9 +171,14 @@ class Game(arcade.Window):
                 elif deck == self.all_decks[3]:
                     card.position = (horizontal_pos + card.card_width // 2,
                                      SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 2 * card.card_height - 2 * self.card_padding_from_cards)
-                else:
-                    # TODO: Implement logic for more or less than 4 players
-                    pass
+                # Move down 3 cards by adding in 3 card heights and padding between 3 cards
+                elif deck == self.all_decks[4]:
+                    card.position = (horizontal_pos + card.card_width // 2,
+                                     SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 3 * card.card_height - 3 * self.card_padding_from_cards)
+                # Move down 4 cards by adding in 4 card heights and padding between 4 cards
+                elif deck == self.all_decks[5]:
+                    card.position = (horizontal_pos + card.card_width // 2,
+                                     SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 4 * card.card_height - 4 * self.card_padding_from_cards)
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
