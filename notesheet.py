@@ -20,6 +20,7 @@ class Notesheet:
         # Create main frame for notesheet
         self.frame = ttk.Frame(self.manager, padding="10")
         self.frame.grid(row=0, column=0, sticky="nsew")
+        
 
         # Configure grid layout
         self.manager.grid_rowconfigure(0, weight=1)
@@ -30,7 +31,7 @@ class Notesheet:
 
         self.create_section("Suspects", ["Colonel Mustard", "Miss Scarlet", 
                             "Mr Green", "Mrs Peacock", "Mrs White", "Professor Plum"], 0)
-        self.create_section("Weapons", ["Candle Stick", "Knife", "Lead Pipe", "Revolver"
+        self.create_section("Weapons", ["Candle Stick", "Knife", "Lead Pipe", "Revolver", 
                             "Rope", "Wrench"], 1)
         self.create_section("Rooms", ["Ballroom", "Billiard Room", "Conservatory",
                             "Dining Room", "Kitchen", "Library", "Lounge", "Study"], 2)
