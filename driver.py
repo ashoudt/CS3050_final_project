@@ -3,6 +3,7 @@ from board import Board
 from ui_elements import GameUI
 from deck import Deck
 import arcade
+import os
 
 # Screen dimensions
 SCREEN_WIDTH = 750
@@ -219,6 +220,18 @@ class Game(arcade.Window):
             self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
         elif key == arcade.key.RIGHT:
             self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+
+    def on_close(self):
+        save_file = "notesheet_state.json"
+        # Disable the UI managert and delete the save file
+        self.ui_manager.disable
+
+        # Delete the notesheet save file to reset the state
+        if os.path.exists(save_file):
+            os.remove(save_file)
+
+        # Call the parent's on_close method to handle default close behavior
+        super().on_close()
 
 def main():
     game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
