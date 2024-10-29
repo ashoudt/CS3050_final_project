@@ -13,7 +13,7 @@ class GameUI:
         self.notesheet_visible = False # Track if notesheet is visible
 
         # Render button
-        default_style = {
+        self.default_style = {
             "font_name": ("calibri", "arial"),
             "font_size": 15,
             "font_color": arcade.color.WHITE,
@@ -33,12 +33,10 @@ class GameUI:
         # Create buttons
         notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
         self.h_box.add(notesheet_button.with_space_around(right=60))
-        roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=default_style)
-        self.h_box.add(roll_button.with_space_around(left=60))
+
 
         # Handle click events
         notesheet_button.on_click = self.on_click_notesheet
-        roll_button.on_click = self.on_click_roll
 
         # Position the buttons 
         self.manager.add(

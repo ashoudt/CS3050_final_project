@@ -2,6 +2,7 @@ from player import Player
 from board import Board
 from ui_elements import GameUI
 from deck import Deck
+from die import Die
 import arcade
 import os
 
@@ -9,6 +10,12 @@ import os
 SCREEN_WIDTH = 750
 SCREEN_HEIGHT = 750
 SCREEN_TITLE = "Clue Game Board with Piece Movement"
+
+# Font Styling
+DEFAULT_FONT_SIZE = 20
+
+
+
 
 
 '''
@@ -127,6 +134,10 @@ class Game(arcade.Window):
         self.player_piece = Player(piece_image, 0.4, 4, 7,
                                    self.board_size, self.board_center_x, self.board_center_y)
 
+        # Create the die
+        self.die = Die(1.25)
+        self.spaces_remaining = 0
+
         # Create the deck and deal out the cards
         self.deck = Deck()
         self.num_players = 4
@@ -178,6 +189,7 @@ class Game(arcade.Window):
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
+        self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
         for self.playerDeck in self.all_decks:
             for self.card in self.playerDeck:
@@ -189,6 +201,29 @@ class Game(arcade.Window):
 
         # Create the GameUI instance
         self.game_ui = GameUI(self.ui_manager)
+
+        # Create the buttons
+        roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.default_style)
+        self.game_ui.h_box.add(roll_button.with_space_around(left=80))
+
+        roll_button.on_click = self.on_roll_click
+
+        # Create the text
+        spaces_left_x = 565
+        spaces_left_y = 30
+        self.spaces_left_text = arcade.Text(
+            f"Spaces Left: {self.spaces_remaining}",
+            spaces_left_x,
+            spaces_left_y,
+            arcade.color.WHITE,
+            DEFAULT_FONT_SIZE,
+        )
+
+    def on_roll_click(self, event):
+        if self.spaces_remaining == 0:
+            self.die.roll()
+            self.spaces_remaining = self.die.value
+            self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
 
     def on_draw(self):
         """
@@ -208,19 +243,35 @@ class Game(arcade.Window):
         # Draw UI elements
         self.ui_manager.draw()
 
+        if self.spaces_remaining != 0:
+            self.spaces_left_text.draw()
+
     def on_key_press(self, key, modifiers):
         """
         Handle player movement using arrow keys.
         """
-        if key == arcade.key.UP:
-            self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
-        elif key == arcade.key.DOWN:
-            self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
-        elif key == arcade.key.LEFT:
-            self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
-        elif key == arcade.key.RIGHT:
-            self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+        if key == arcade.key.ESCAPE:
+            arcade.close_window()
+            arcade.exit()
 
+        if self.spaces_remaining > 0:
+            if key == arcade.key.UP:
+                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
+                self.spaces_remaining -= 1
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.DOWN:
+                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
+                self.spaces_remaining -= 1
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.LEFT:
+                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
+                self.spaces_remaining -= 1
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.RIGHT:
+                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+                self.spaces_remaining -= 1
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                
     def on_close(self):
         save_file = "notesheet_state.json"
         # Disable the UI managert and delete the save file
@@ -241,9 +292,6 @@ def main():
     PLAYERS_TURN = True
     while not GAME_IS_OVER:
         while PLAYERS_TURN:
-            '''
-            Not all of this code is still accurate, but it's a template for how the game should operate
-            '''
             #if move button is pressed
                 #give the player control
                 # if player not in a room
