@@ -1,6 +1,7 @@
 import arcade
 import arcade.gui
 import tkinter as tk
+import threading
 from notesheet import Notesheet as ns
 
 class GameUI:
@@ -35,15 +36,11 @@ class GameUI:
         roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=default_style)
         self.h_box.add(roll_button.with_space_around(left=60))
 
-
-        # Create an editable test area for the notesheet
-        self.notesheet = arcade.gui.UIInputText(text="Input Notes:", width=400, height=600)
-
         # Handle click events
         notesheet_button.on_click = self.on_click_notesheet
-        roll_button.on_click = self.on_click_start
+        roll_button.on_click = self.on_click_roll
 
-        # Create a widget to hold the h_box widget, that will center the buttons
+        # Position the buttons 
         self.manager.add(
             arcade.gui.UIAnchorWidget(
                 anchor_x="center_x",
@@ -53,14 +50,20 @@ class GameUI:
                 child=self.h_box)
         )
 
-    def on_click_start(self, event):
-        """Place holder for actions"""
-        print("Start:", event)
+    def on_click_roll(self, event):
+        """Place holder for roll actions"""
+        print("Roll action started")
 
     def on_click_notesheet(self, event):
-        """ Function to open the notesheet"""
+        """Initiate the tkinter window for the Notesheet in a new thread"""
         if not self.notesheet_visible:
             self.notesheet_visible = True
-            root = tk.Tk()
-            app = ns(manager=root)
-            root.mainloop()
+            threading.Thread(target=self.open_notesheet, daemon=True).start()
+    def open_notesheet(self):
+        """
+        Create and show the Notesheet window
+        """  
+        root = tk.Tk()
+        app = ns(manager=root)
+        root.mainloop()
+        self.notesheet_visible = False # Reset visability flag
