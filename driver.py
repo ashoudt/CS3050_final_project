@@ -123,7 +123,7 @@ class Game(arcade.Window):
 
         # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
-        self.player_piece = Player(piece_image, 0.4, 0, 7,
+        self.player_piece = Player(piece_image, 0.4, 4, 7,
                                    self.board_size, self.board_center_x, self.board_center_y)
 
         # Create the deck and deal out the cards
@@ -212,13 +212,13 @@ class Game(arcade.Window):
         Handle player movement using arrow keys.
         """
         if key == arcade.key.UP:
-            self.player_piece.move(1, 0, self.board.rooms, self.board.doors)
+            self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
         elif key == arcade.key.DOWN:
-            self.player_piece.move(-1, 0, self.board.rooms, self.board.doors)
+            self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
         elif key == arcade.key.LEFT:
-            self.player_piece.move(0, -1, self.board.rooms, self.board.doors)
+            self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
         elif key == arcade.key.RIGHT:
-            self.player_piece.move(0, 1, self.board.rooms, self.board.doors)
+            self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
 
 def main():
     game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
