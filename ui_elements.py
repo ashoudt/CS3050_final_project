@@ -1,5 +1,7 @@
 import arcade
 import arcade.gui
+import tkinter as tk
+from notesheet import Notesheet as ns
 
 class GameUI:
     """
@@ -24,14 +26,10 @@ class GameUI:
             "font_color_pressed": arcade.color.BLACK,
         }
 
-        # Create a vertical BoxGroup to align buttons
+        # Create a horizontal BoxGroup to align buttons
         self.h_box = arcade.gui.UIBoxLayout(vertical=False)
 
         # Create buttons
-        #suggestion_button = arcade.gui.UIFlatButton(text="Suggestion", width=200, style=default_style)
-        #self.v_box.add(suggestion_button.with_space_around(bottom=20))
-        #accusation_button = arcade.gui.UIFlatButton(text="Accusation", width=200, style=default_style)
-        #self.v_box.add(accusation_button.with_space_around(bottom=100))
         notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
         self.h_box.add(notesheet_button.with_space_around(right=60))
         roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=default_style)
@@ -42,10 +40,10 @@ class GameUI:
         self.notesheet = arcade.gui.UIInputText(text="Input Notes:", width=400, height=600)
 
         # Handle click events
-        notesheet_button.on_click = self.on_click_start
+        notesheet_button.on_click = self.on_click_notesheet
         roll_button.on_click = self.on_click_start
 
-        # Create a widget to hold the v_box widget, that will center the buttons
+        # Create a widget to hold the h_box widget, that will center the buttons
         self.manager.add(
             arcade.gui.UIAnchorWidget(
                 anchor_x="center_x",
@@ -56,4 +54,13 @@ class GameUI:
         )
 
     def on_click_start(self, event):
+        """Place holder for actions"""
         print("Start:", event)
+
+    def on_click_notesheet(self, event):
+        """ Function to open the notesheet"""
+        if not self.notesheet_visible:
+            self.notesheet_visible = True
+            root = tk.Tk()
+            app = ns(manager=root)
+            root.mainloop()
