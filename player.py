@@ -95,3 +95,10 @@ class Player(arcade.Sprite):
                     return True, room  # Valid move within a room
         return False, None  # Invalid move through a wall
 
+    def within_a_room(self, rooms):
+        """Check if the player is inside a room"""
+        for room in rooms:
+            for row_start, row_end, col_start, col_end in room.boundaries:
+                if row_start <= self.row <= row_end and col_start <= self.column <= col_end:
+                    return True
+        return False

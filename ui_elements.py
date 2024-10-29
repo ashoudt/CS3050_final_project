@@ -12,7 +12,6 @@ class GameUI:
         self.manager = manager
         self.notesheet_visible = False # Track if notesheet is visible
 
-        # Render button
         self.default_style = {
             "font_name": ("calibri", "arial"),
             "font_size": 15,
@@ -27,11 +26,21 @@ class GameUI:
             "font_color_pressed": arcade.color.BLACK,
         }
 
+        self.disabled_style = {
+            "font_name": ("calibri", "arial"),
+            "font_size": 15,
+            "font_color": arcade.color.WHITE,
+            "border_width": 2,
+            "border_color": None,
+            "bg_color": arcade.color.GRAY,
+        }
+
+
         # Create a horizontal BoxGroup to align buttons
         self.h_box = arcade.gui.UIBoxLayout(vertical=False)
 
         # Create buttons
-        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
+        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=self.default_style)
         self.h_box.add(notesheet_button.with_space_around(right=60))
 
 
@@ -47,10 +56,6 @@ class GameUI:
                 align_y=-335,
                 child=self.h_box)
         )
-
-    def on_click_roll(self, event):
-        """Place holder for roll actions"""
-        print("Roll action started")
 
     def on_click_notesheet(self, event):
         """Initiate the tkinter window for the Notesheet in a new thread"""
