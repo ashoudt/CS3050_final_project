@@ -4,6 +4,7 @@ from ui_elements import GameUI
 from deck import Deck
 from die import Die
 import arcade
+import os
 
 # Screen dimensions
 SCREEN_WIDTH = 750
@@ -130,7 +131,7 @@ class Game(arcade.Window):
 
         # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
-        self.player_piece = Player(piece_image, 0.4, 0, 7,
+        self.player_piece = Player(piece_image, 0.4, 4, 7,
                                    self.board_size, self.board_center_x, self.board_center_y)
 
         # Create the die
@@ -255,21 +256,33 @@ class Game(arcade.Window):
 
         if self.spaces_remaining > 0:
             if key == arcade.key.UP:
-                self.player_piece.move(1, 0, self.board.rooms, self.board.doors)
+                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
                 self.spaces_remaining -= 1
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.DOWN:
-                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors)
+                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
                 self.spaces_remaining -= 1
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.LEFT:
-                self.player_piece.move(0, -1, self.board.rooms, self.board.doors)
+                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
                 self.spaces_remaining -= 1
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.RIGHT:
-                self.player_piece.move(0, 1, self.board.rooms, self.board.doors)
+                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
                 self.spaces_remaining -= 1
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                
+    def on_close(self):
+        save_file = "notesheet_state.json"
+        # Disable the UI managert and delete the save file
+        self.ui_manager.disable
+
+        # Delete the notesheet save file to reset the state
+        if os.path.exists(save_file):
+            os.remove(save_file)
+
+        # Call the parent's on_close method to handle default close behavior
+        super().on_close()
 
 def main():
     game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)

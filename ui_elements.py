@@ -1,5 +1,8 @@
 import arcade
 import arcade.gui
+import tkinter as tk
+import threading
+from notesheet import Notesheet as ns
 
 class GameUI:
     """
@@ -24,25 +27,18 @@ class GameUI:
             "font_color_pressed": arcade.color.BLACK,
         }
 
-        # Create a vertical BoxGroup to align buttons
+        # Create a horizontal BoxGroup to align buttons
         self.h_box = arcade.gui.UIBoxLayout(vertical=False)
 
         # Create buttons
-        #suggestion_button = arcade.gui.UIFlatButton(text="Suggestion", width=200, style=default_style)
-        #self.v_box.add(suggestion_button.with_space_around(bottom=20))
-        #accusation_button = arcade.gui.UIFlatButton(text="Accusation", width=200, style=default_style)
-        #self.v_box.add(accusation_button.with_space_around(bottom=100))
-        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=self.default_style)
-        self.h_box.add(notesheet_button.with_space_around(right=50))
+        notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
+        self.h_box.add(notesheet_button.with_space_around(right=60))
 
-
-        # Create an editable test area for the notesheet
-        self.notesheet = arcade.gui.UIInputText(text="Input Notes:", width=400, height=600)
 
         # Handle click events
-        notesheet_button.on_click = self.on_click_start
+        notesheet_button.on_click = self.on_click_notesheet
 
-        # Create a widget to hold the v_box widget, that will center the buttons
+        # Position the buttons 
         self.manager.add(
             arcade.gui.UIAnchorWidget(
                 anchor_x="center_x",
@@ -52,5 +48,20 @@ class GameUI:
                 child=self.h_box)
         )
 
-    def on_click_start(self, event):
-        print("Start:", event)
+    def on_click_roll(self, event):
+        """Place holder for roll actions"""
+        print("Roll action started")
+
+    def on_click_notesheet(self, event):
+        """Initiate the tkinter window for the Notesheet in a new thread"""
+        if not self.notesheet_visible:
+            self.notesheet_visible = True
+            threading.Thread(target=self.open_notesheet, daemon=True).start()
+    def open_notesheet(self):
+        """
+        Create and show the Notesheet window
+        """  
+        root = tk.Tk()
+        app = ns(manager=root)
+        root.mainloop()
+        self.notesheet_visible = False # Reset visability flag
