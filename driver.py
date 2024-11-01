@@ -15,9 +15,6 @@ SCREEN_TITLE = "Clue Game Board with Piece Movement"
 DEFAULT_FONT_SIZE = 20
 
 
-
-
-
 '''
 pseudocode for main game loop
 lines marked with * at the beginning are not necessary to implement for the first deliverable
@@ -76,45 +73,6 @@ while not game is over
 '''
 
 
-def playerIsActing(action):
-    '''
-    Test text-based code, will be replaced with buttons
-
-    playerIsActing = ""
-    while playerIsActing != "y" and playerIsActing != "n":
-        playerIsActing = input(f"Do you wish to {action} this turn? (y/n)\n")
-        if playerIsActing != "y" and playerIsActing != "n":
-            print("Invalid input")
-    if playerIsActing == "y":
-        return True
-    else:
-        return False
-    '''
-
-
-def guess():
-    '''
-    Test text-based code, the logic is useful but we aren't planning on using text in the final product
-
-    guessedSuspect = ""
-    while guessedSuspect not in VALID_SUSPECTS:
-        guessedSuspect = input("Guess a suspect: ")
-        if guessedSuspect not in VALID_SUSPECTS:
-            print("Invalid input")
-    guessedWeapon = ""
-    while guessedWeapon not in VALID_WEAPONS:
-        guessedWeapon = input("Guess a weapon: ")
-        if guessedWeapon not in VALID_WEAPONS:
-            print("Invalid input")
-    guessedRoom = ""
-    while guessedRoom not in VALID_ROOMS:
-        guessedRoom = input("Guess a room: ")
-        if guessedRoom not in VALID_ROOMS:
-            print("Invalid input")
-    return guessedSuspect, guessedWeapon, guessedRoom
-    '''
-
-
 class Game(arcade.Window):
     def __init__(self, width, height, title):
         """
@@ -128,6 +86,9 @@ class Game(arcade.Window):
         self.board_center_x = self.board.board_center_x
         self.board_center_y = self.board.board_center_y
         self.background_texture = self.board.background_texture
+
+        # Keep track of whose turn it currently is
+        self.whose_turn = [True, False, False, False]
 
         # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
@@ -204,29 +165,40 @@ class Game(arcade.Window):
 
         # Create the roll button and disabled roll button
         self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.default_style)
-        # self.roll_button_disabled = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.disabled_style)
         self.game_ui.h_box.add(self.roll_button.with_space_around(left=80))
-        # self.game_ui.h_box.add(self.roll_button_disabled.with_space_around(right=80))
         self.roll_button.on_click = self.on_roll_click
-
         self.roll_disabled = False
 
-        # Create the text
-        spaces_left_x = 565
-        spaces_left_y = 30
+        # Create the text for the disabled roll "button"
+        disabled_roll_text_x = 426
+        disabled_roll_text_y = 31
+        self.disabled_roll_text = arcade.Text(
+            "Roll",
+            disabled_roll_text_x,
+            disabled_roll_text_y,
+            arcade.color.WHITE,
+            font_size=15,
+            font_name=("calibri", "arial")
+        )
+
+        # Create the text for how many spaces remaining
+        spaces_left_text_x = 565
+        spaces_left_text_y = 30
         self.spaces_left_text = arcade.Text(
             f"Spaces Left: {self.spaces_remaining}",
-            spaces_left_x,
-            spaces_left_y,
+            spaces_left_text_x,
+            spaces_left_text_y,
             arcade.color.WHITE,
             DEFAULT_FONT_SIZE,
         )
 
     def on_roll_click(self, event):
-        if self.spaces_remaining == 0:
-            self.die.roll()
-            self.spaces_remaining = self.die.value
-            self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+        if not self.roll_disabled:
+            if self.spaces_remaining == 0:
+                self.die.roll()
+                self.spaces_remaining = self.die.value
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                self.roll_disabled = True
 
     def on_draw(self):
         """
@@ -246,11 +218,38 @@ class Game(arcade.Window):
         # Draw UI elements
         self.ui_manager.draw()
 
+        # If roll is disabled, draw over it
+        if self.roll_disabled:
+            arcade.draw_rectangle_filled(self.roll_button.center_x, self.roll_button.center_y,
+                                     200, 50, arcade.color.GRAY)
+            self.disabled_roll_text.draw()
+
         if self.spaces_remaining != 0:
             self.spaces_left_text.draw()
-            self.roll_disabled = True
+
+        card_width = 81
+        card_height = 93
+        padding_from_card = 10
+        triangle_x1 = self.board.padding + self.board.board_size + self.card_padding_from_board + card_width + padding_from_card
+        triangle_y1 = SCREEN_HEIGHT - self.card_padding_from_edge - card_height // 2
+        triangle_x2 = triangle_x1 + 15
+        triangle_y2 = triangle_y1 + 15
+        triangle_x3 = triangle_x1 + 15
+        triangle_y3 = triangle_y1 - 15
+        if self.whose_turn[0]:
+            pass
+            # if self.spaces_remaining == 0:
+                # self.roll_disabled = False
         else:
-            self.roll_disabled = False
+            offset_factor = 1
+            for i in range(0, len(self.whose_turn)):
+                if self.whose_turn[i]:
+                    offset_factor = i - 1
+            vertical_offset = offset_factor * (card_height + self.card_padding_from_cards)
+            arcade.draw_triangle_filled(triangle_x1, triangle_y1 - vertical_offset,
+                                        triangle_x2, triangle_y2 - vertical_offset,
+                                        triangle_x3, triangle_y3 - vertical_offset,
+                                        arcade.color.GREEN)
 
     def on_key_press(self, key, modifiers):
         """
@@ -259,6 +258,8 @@ class Game(arcade.Window):
         if key == arcade.key.ESCAPE:
             arcade.close_window()
             arcade.exit()
+        elif key == arcade.key.ENTER:
+            self.next_turn()
 
         if self.spaces_remaining > 0:
             last_row = self.player_piece.row
@@ -279,6 +280,21 @@ class Game(arcade.Window):
                 self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+
+    def next_turn(self):
+        if self.whose_turn[0]:
+            self.whose_turn[0] = False
+            self.whose_turn[1] = True
+        elif self.whose_turn[1]:
+            self.whose_turn[1] = False
+            self.whose_turn[2] = True
+        elif self.whose_turn[2]:
+            self.whose_turn[2] = False
+            self.whose_turn[3] = True
+        elif self.whose_turn[3]:
+            self.whose_turn[3] = False
+            self.whose_turn[0] = True
+            self.roll_disabled = False
 
     def update_spaces_left(self, last_row, last_col):
         if not self.player_piece.within_a_room(self.board.rooms):
