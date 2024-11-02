@@ -199,8 +199,8 @@ class Game(arcade.Window):
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
-        for self.playerDeck in self.all_decks:
-            for self.card in self.playerDeck:
+        for self.player_deck in self.all_decks:
+            for self.card in self.player_deck:
                 self.all_sprites.append(self.card)
 
         # Create UI manager for buttons and notesheet
@@ -319,7 +319,6 @@ class Game(arcade.Window):
         if not self.player_piece.within_a_room(self.board.rooms):
             if self.player_piece.row != last_row or self.player_piece.column != last_col:
                 self.spaces_remaining -= 1
-
 
     def on_close(self):
         save_file = "notesheet_state.json"
