@@ -161,18 +161,5 @@ class Deck:
         #     guessed_cards.append(ai_deck[i])
         # found, refute_card = self.deck.refute_guess(guessed_cards, self.all_decks)  # will return true, the card found
 
-
-    # A function for ONLY players to call to display the card that refutes their guess
-    # TODO: Figure out where position would come from, and give example of calling the funcs
-    #  return deck in refute_guess? just have this as code in driver (cause no draw?)
-    def display_refute_card(self, refute_card, position):
-        # Draw the card in the given position
-        # based on the position of the deck that had the card
-
-        # Once the card has been acknowledged (written in note card? certain amount of time?)
-        # Then delete it
-        pass
-
-
     def get_killer(self):
         return self.killer_cards
