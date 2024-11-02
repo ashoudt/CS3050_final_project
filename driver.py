@@ -2,12 +2,20 @@ from player import Player
 from board import Board
 from ui_elements import GameUI
 from deck import Deck
+from die import Die
 import arcade
+import os
 
 # Screen dimensions
 SCREEN_WIDTH = 750
 SCREEN_HEIGHT = 750
 SCREEN_TITLE = "Clue Game Board with Piece Movement"
+
+# Font Styling
+DEFAULT_FONT_SIZE = 20
+
+
+
 
 
 '''
@@ -123,8 +131,12 @@ class Game(arcade.Window):
 
         # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
-        self.player_piece = Player(piece_image, 0.4, 0, 7,
+        self.player_piece = Player(piece_image, 0.4, 4, 7,
                                    self.board_size, self.board_center_x, self.board_center_y)
+
+        # Create the die
+        self.die = Die(1.25)
+        self.spaces_remaining = 0
 
         # Create the deck and deal out the cards
         self.deck = Deck()
@@ -182,6 +194,7 @@ class Game(arcade.Window):
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
+        self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
         for self.playerDeck in self.all_decks:
             for self.card in self.playerDeck:
@@ -193,6 +206,32 @@ class Game(arcade.Window):
 
         # Create the GameUI instance
         self.game_ui = GameUI(self.ui_manager)
+
+        # Create the roll button and disabled roll button
+        self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.default_style)
+        # self.roll_button_disabled = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.disabled_style)
+        self.game_ui.h_box.add(self.roll_button.with_space_around(left=80))
+        # self.game_ui.h_box.add(self.roll_button_disabled.with_space_around(right=80))
+        self.roll_button.on_click = self.on_roll_click
+
+        self.roll_disabled = False
+
+        # Create the text
+        spaces_left_x = 565
+        spaces_left_y = 30
+        self.spaces_left_text = arcade.Text(
+            f"Spaces Left: {self.spaces_remaining}",
+            spaces_left_x,
+            spaces_left_y,
+            arcade.color.WHITE,
+            DEFAULT_FONT_SIZE,
+        )
+
+    def on_roll_click(self, event):
+        if self.spaces_remaining == 0:
+            self.die.roll()
+            self.spaces_remaining = self.die.value
+            self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
 
     def on_draw(self):
         """
@@ -212,30 +251,66 @@ class Game(arcade.Window):
         # Draw UI elements
         self.ui_manager.draw()
 
+        if self.spaces_remaining != 0:
+            self.spaces_left_text.draw()
+            self.roll_disabled = True
+        else:
+            self.roll_disabled = False
+
     def on_key_press(self, key, modifiers):
         """
         Handle player movement using arrow keys.
         """
-        if key == arcade.key.UP:
-            self.player_piece.move(1, 0, self.board.rooms, self.board.doors)
-        elif key == arcade.key.DOWN:
-            self.player_piece.move(-1, 0, self.board.rooms, self.board.doors)
-        elif key == arcade.key.LEFT:
-            self.player_piece.move(0, -1, self.board.rooms, self.board.doors)
-        elif key == arcade.key.RIGHT:
-            self.player_piece.move(0, 1, self.board.rooms, self.board.doors)
+        if key == arcade.key.ESCAPE:
+            arcade.close_window()
+            arcade.exit()
+
+        if self.spaces_remaining > 0:
+            last_row = self.player_piece.row
+            last_col = self.player_piece.column
+            if key == arcade.key.UP:
+                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
+                self.update_spaces_left(last_row, last_col)
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.DOWN:
+                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
+                self.update_spaces_left(last_row, last_col)
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.LEFT:
+                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
+                self.update_spaces_left(last_row, last_col)
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            elif key == arcade.key.RIGHT:
+                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+                self.update_spaces_left(last_row, last_col)
+                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+
+    def update_spaces_left(self, last_row, last_col):
+        if not self.player_piece.within_a_room(self.board.rooms):
+            if self.player_piece.row != last_row or self.player_piece.column != last_col:
+                self.spaces_remaining -= 1
+
+
+    def on_close(self):
+        save_file = "notesheet_state.json"
+        # Disable the UI managert and delete the save file
+        self.ui_manager.disable
+
+        # Delete the notesheet save file to reset the state
+        if os.path.exists(save_file):
+            os.remove(save_file)
+
+        # Call the parent's on_close method to handle default close behavior
+        super().on_close()
 
 def main():
     game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     arcade.run()
-    GAME_IS_OVER = False
-    PLAYER_WON = False
-    PLAYERS_TURN = True
-    while not GAME_IS_OVER:
-        while PLAYERS_TURN:
-            '''
-            Not all of this code is still accurate, but it's a template for how the game should operate
-            '''
+    game_over = False
+    player_won = False
+    players_turn = True
+    while not game_over:
+        while players_turn:
             #if move button is pressed
                 #give the player control
                 # if player not in a room
@@ -258,10 +333,10 @@ def main():
                 #if solution == [guessedSuspect, guessedWeapon, guessedRoom]:
                     #PLAYER_WON = True
                 #GAME_IS_OVER = True
-            PLAYERS_TURN = False
-        while not PLAYERS_TURN:
-            PLAYERS_TURN = True
-    if PLAYER_WON:
+            players_turn = False
+        while not players_turn:
+            players_turn = True
+    if player_won:
         print("Congrats, you won!")
     else:
         print("Sorry, you lost")
