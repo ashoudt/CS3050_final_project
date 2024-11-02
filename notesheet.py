@@ -13,18 +13,18 @@ class Notesheet:
     Provide suggestion and button capabilities.
     """
 
-    def __init__(self, manager):
-        self.manager = manager
-        self.manager.title("Notesheet")
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Notesheet")
 
         # Create main frame for notesheet
-        self.frame = ttk.Frame(self.manager, padding="10")
+        self.frame = ttk.Frame(self.master, padding="10")
         self.frame.grid(row=0, column=0, sticky="nsew")
         
 
         # Configure grid layout
-        self.manager.grid_rowconfigure(0, weight=1)
-        self.manager.grid_columnconfigure(0, weight=1)
+        self.master.grid_rowconfigure(0, weight=1)
+        self.master.grid_columnconfigure(0, weight=1)
 
         # Create sections for each card category
         self.vars = {} # Dictionary to hold all check box variables
@@ -50,7 +50,7 @@ class Notesheet:
         self.load_data()
 
         # Bind close event to save data when window is closed
-        self.manager.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
 
 
     def create_section(self, title, items, col):
@@ -116,7 +116,7 @@ class Notesheet:
         Save data and close the window
         """
         self.save_data()
-        self.manager.destroy()
+        self.master.destroy()
 
     def suggestion(self):
         """

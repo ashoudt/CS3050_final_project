@@ -222,6 +222,9 @@ class Game(arcade.Window):
             self.player_piece.move(0, 1, self.board.rooms, self.board.doors)
 
     def on_close(self):
+        """
+        Handle close operations. 
+        """
         save_file = "notesheet_state.json"
         # Disable the UI managert and delete the save file
         self.ui_manager.disable
@@ -232,6 +235,12 @@ class Game(arcade.Window):
 
         # Call the parent's on_close method to handle default close behavior
         super().on_close()
+
+    def on_update(self, delta_time):
+        """
+        Periodic update call to keep tkinter responsive.
+        """
+        self.game_ui.update_notesheet()  # Update tkinter window
 
 def main():
     game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)

@@ -11,6 +11,8 @@ class GameUI:
     def __init__(self, manager):
         self.manager = manager
         self.notesheet_visible = False # Track if notesheet is visible
+        self.notesheet_window = None
+        self.notesheet_instance = None  # Hold the Notesheet instance
 
         # Render button
         default_style = {
@@ -51,19 +53,52 @@ class GameUI:
         )
 
     def on_click_roll(self, event):
-        """Place holder for roll actions"""
+        """
+        Place holder for roll actions
+        """
         print("Roll action started")
 
     def on_click_notesheet(self, event):
-        """Initiate the tkinter window for the Notesheet in a new thread"""
+        """
+        Initiate the tkinter window for the Notesheet in a new thread
+        """
         if not self.notesheet_visible:
             self.notesheet_visible = True
-            threading.Thread(target=self.open_notesheet, daemon=True).start()
+            print("Opening Notesheet...")
+            self.open_notesheet()
+
     def open_notesheet(self):
         """
         Create and show the Notesheet window
         """  
-        root = tk.Tk()
-        app = ns(manager=root)
-        root.mainloop()
-        self.notesheet_visible = False # Reset visability flag
+        # Initialize the Tk window
+        self.notesheet_window = tk.Tk()
+        
+        # Create an instance of Notesheet within the Tk root
+        self.notesheet_instance = ns(self.notesheet_window)
+        print("Initializing Notesheet...")
+
+        # Handle the closing of the Notesheet
+        self.notesheet_window.protocol("WM_DELETE_WINDOW", self.close_notesheet)
+
+    def close_notesheet(self):
+        """
+        Close the Notesheet window, save data, and reset visibility
+        """
+        if self.notesheet_window:
+            # Call Notesheet's on_close to ensure data is saved
+            if self.notesheet_instance:
+                self.notesheet_instance.on_close()
+                print("Notesheet closed.")
+
+    def update_notesheet(self):
+        """
+        Update the tkinter window periodically if open
+        """
+        if self.notesheet_window:
+            try:
+                self.notesheet_window.update()
+            except tk.TclError:
+                # If window is already destroyed, set the reference to None
+                self.notesheet_window = None
+                self.notesheet_visible = False
