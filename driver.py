@@ -1,3 +1,5 @@
+import time
+
 from player import Player
 from board import Board
 from ui_elements import GameUI
@@ -226,6 +228,23 @@ class Game(arcade.Window):
             arcade.color.WHITE,
             DEFAULT_FONT_SIZE,
         )
+
+    def flip_refute_card(self, card):
+        # Flip card upright
+        card.face_up()
+
+        # Move card to back of the sprites list
+        self.all_sprites.remove(card)
+        self.all_sprites.append(card)
+
+        # TODO: check that sleep works once the game loop is implemented
+        time.sleep(10)
+
+        # wait 10 seconds, then flip the card back over
+        card.face_down()
+
+        # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
+        # self.flip_refute_card(refute_card)
 
     def on_roll_click(self, event):
         if self.spaces_remaining == 0:

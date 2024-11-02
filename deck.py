@@ -1,5 +1,6 @@
 # Define functions to maintain a deck of cards
 import random
+
 import arcade
 
 # ***Define our constants (size of assets/values)***
@@ -134,6 +135,44 @@ class Deck:
 
     def get_all_cards(self):
         return self.all_decks
+
+    # A function that takes guess cards and sees if any other players can refute the guess
+    # Returns True and the card if found, and false and NULL/None if not
+    def refute_guess(self, guessed_cards, decks):
+        # Loop through all cards in each deck
+        for deck in decks:
+            for card in deck:
+                # If card is in deck, return the card
+                # if guessed_suspect == card or guessed_weapon == card or guessed_room == card:
+                if card in guessed_cards:
+                    # TODO: Add functionality for AIs and players to write this value to note sheet
+                    print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
+                    return True, card
+
+        # The card wasn't found
+        print("The other players cannot refute your guess")
+        return False, None
+
+        # Example of calling the refute_guess function (would be called in driver.py)
+        # guessed_cards = []
+        # ai_deck = self.all_decks[1]  # Choose 3 random cards from an ai (for testing only)
+        # for i in range(0, 3):
+        #     print(f'Guessed card: {ai_deck[i].value}')
+        #     guessed_cards.append(ai_deck[i])
+        # found, refute_card = self.deck.refute_guess(guessed_cards, self.all_decks)  # will return true, the card found
+
+
+    # A function for ONLY players to call to display the card that refutes their guess
+    # TODO: Figure out where position would come from, and give example of calling the funcs
+    #  return deck in refute_guess? just have this as code in driver (cause no draw?)
+    def display_refute_card(self, refute_card, position):
+        # Draw the card in the given position
+        # based on the position of the deck that had the card
+
+        # Once the card has been acknowledged (written in note card? certain amount of time?)
+        # Then delete it
+        pass
+
 
     def get_killer(self):
         return self.killer_cards
