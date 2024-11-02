@@ -1,3 +1,5 @@
+import time
+
 from player import Player
 from board import Board
 from ui_elements import GameUI
@@ -143,6 +145,7 @@ class Game(arcade.Window):
         self.num_players = 4
         self.deck.deal(self.num_players)
         self.all_decks = self.deck.get_all_cards()
+        self.refute_card = None
 
         self.card_padding_from_board = 20
         self.card_padding_from_cards = 20
@@ -183,16 +186,21 @@ class Game(arcade.Window):
                 elif deck == self.all_decks[3]:
                     card.position = (horizontal_pos + card.card_width // 2,
                                      SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 2 * card.card_height - 2 * self.card_padding_from_cards)
-                else:
-                    # TODO: Implement logic for more or less than 4 players
-                    pass
+                # Move down 3 cards by adding in 3 card heights and padding between 3 cards
+                elif deck == self.all_decks[4]:
+                    card.position = (horizontal_pos + card.card_width // 2,
+                                     SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 3 * card.card_height - 3 * self.card_padding_from_cards)
+                # Move down 4 cards by adding in 4 card heights and padding between 4 cards
+                elif deck == self.all_decks[5]:
+                    card.position = (horizontal_pos + card.card_width // 2,
+                                     SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 4 * card.card_height - 4 * self.card_padding_from_cards)
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
-        for self.playerDeck in self.all_decks:
-            for self.card in self.playerDeck:
+        for self.player_deck in self.all_decks:
+            for self.card in self.player_deck:
                 self.all_sprites.append(self.card)
 
         # Create UI manager for buttons and notesheet
@@ -221,6 +229,33 @@ class Game(arcade.Window):
             arcade.color.WHITE,
             DEFAULT_FONT_SIZE,
         )
+
+    # A function to flip an AI's card face down after they have refuted your guess
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        # Check if the user clicked on a face_up refute card
+        cards = arcade.get_sprites_at_point((x, y), self.all_sprites)
+
+        # If they did, flip it face down again and reset the refute_card
+        if self.refute_card in cards:
+            self.refute_card.face_down()
+            self.refute_card = None
+
+    def flip_refute_card(self, card):
+        # Flip card upright
+        card.face_up()
+
+        # Move card to back of the sprites list
+        self.all_sprites.remove(card)
+        self.all_sprites.append(card)
+
+        # TODO: check that sleep works once the game loop is implemented
+        # time.sleep(10)
+
+        # wait 10 seconds, then flip the card back over
+        # card.face_down()
+
+        # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
+        # self.flip_refute_card(refute_card)
 
     def on_roll_click(self, event):
         if self.spaces_remaining == 0:
@@ -284,7 +319,6 @@ class Game(arcade.Window):
         if not self.player_piece.within_a_room(self.board.rooms):
             if self.player_piece.row != last_row or self.player_piece.column != last_col:
                 self.spaces_remaining -= 1
-
 
     def on_close(self):
         save_file = "notesheet_state.json"
