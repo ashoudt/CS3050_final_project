@@ -145,6 +145,7 @@ class Game(arcade.Window):
         self.num_players = 4
         self.deck.deal(self.num_players)
         self.all_decks = self.deck.get_all_cards()
+        self.refute_card = None
 
         self.card_padding_from_board = 20
         self.card_padding_from_cards = 20
@@ -229,6 +230,16 @@ class Game(arcade.Window):
             DEFAULT_FONT_SIZE,
         )
 
+    # A function to flip an AI's card face down after they have refuted your guess
+    def on_mouse_press(self, x, y, button, key_modifiers):
+        # Check if the user clicked on a face_up refute card
+        cards = arcade.get_sprites_at_point((x, y), self.all_sprites)
+
+        # If they did, flip it face down again and reset the refute_card
+        if self.refute_card in cards:
+            self.refute_card.face_down()
+            self.refute_card = None
+
     def flip_refute_card(self, card):
         # Flip card upright
         card.face_up()
@@ -238,10 +249,10 @@ class Game(arcade.Window):
         self.all_sprites.append(card)
 
         # TODO: check that sleep works once the game loop is implemented
-        time.sleep(10)
+        # time.sleep(10)
 
         # wait 10 seconds, then flip the card back over
-        card.face_down()
+        # card.face_down()
 
         # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
         # self.flip_refute_card(refute_card)

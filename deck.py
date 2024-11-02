@@ -159,7 +159,7 @@ class Deck:
         # for i in range(0, 3):
         #     print(f'Guessed card: {ai_deck[i].value}')
         #     guessed_cards.append(ai_deck[i])
-        # found, refute_card = self.deck.refute_guess(guessed_cards, self.all_decks)  # will return true, the card found
+        # found, self.refute_card = self.deck.refute_guess(guessed_cards, self.all_decks)  # return true, the card found
 
     def get_killer(self):
         return self.killer_cards
