@@ -117,13 +117,15 @@ def guess():
     '''
 
 
-class Game(arcade.Window):
-    def __init__(self, width, height, title):
+class GameView(arcade.View):
+    def __init__(self):
         """
         Set up the application.
         """
-        super().__init__(width, height, title)
+        super().__init__()
+        self.setup()
 
+    def setup(self):
         # Create the board
         self.board = Board()
         self.board_size = self.board.board_size
@@ -332,9 +334,91 @@ class Game(arcade.Window):
         # Call the parent's on_close method to handle default close behavior
         super().on_close()
 
+class InstructionView(arcade.View):
+
+    def on_show_view(self):
+        # Set the background color and reset the viewport
+        arcade.set_viewport(0, self.window.width, 0, self.window.height)
+
+    def on_draw(self):
+        """ Draw the instruction screen """
+        self.clear()
+
+        # Title
+        arcade.draw_text("Instructions", self.window.width / 2, self.window.height - 60,
+                         arcade.color.WHITE, font_size=40, anchor_x="center")
+
+        # Instructions text
+        instructions = [
+            "Objective: Deduce the murderer, weapon, and room of the crime.",
+            "",
+            "Gameplay:",
+            "1. Roll the die to move around the board using your arrow keys.",
+            "2. Enter rooms to make suggestions (murderer, weapon, room).",
+            "3. Other players must disprove your suggestion if possible.",
+            "4. Use clues to narrow down suspects, weapons, and rooms.",
+            "",
+            "Winning:",
+            "When confident, make an accusation. If correct, you win!",
+            "If incorrect, you’re out of the game.",
+            "",
+            "Click anywhere to start the game."
+        ]
+
+        # Draw each line of instructions
+        start_y = self.window.height - 120
+        for i, line in enumerate(instructions):
+            arcade.draw_text(line, self.window.width / 2, start_y - i * 25,
+                             arcade.color.LIGHT_GRAY, font_size=16, anchor_x="center")
+
+        # Footer
+        arcade.draw_text("Click to start", self.window.width / 2, 30,
+                         arcade.color.WHITE, font_size=18, anchor_x="center")
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ Start the game when the mouse is pressed """
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+
+
+class GameOverView(arcade.View):
+    """ View to show when game is over """
+
+    def __init__(self):
+        """ This is run once when we switch to this view """
+        super().__init__()
+        #self.texture = arcade.load_texture("game_over.png")
+
+        # Reset the viewport, necessary if we have a scrolling game and we need
+        # to reset the viewport back to the start so we can see what we draw.
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+
+    def on_draw(self):
+        """ Draw this view """
+        self.clear()
+        # TODO: Add text to screen, maybe background overlaid
+        arcade.draw_text("Game Over Screen", self.window.width / 2, self.window.height / 2,
+                         arcade.color.WHITE, font_size=50, anchor_x="center")
+        arcade.draw_text("Click to advance", self.window.width / 2, self.window.height / 2-75,
+                         arcade.color.WHITE, font_size=20, anchor_x="center")
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ If the user presses the mouse button, re-start the game. """
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+    
+
 def main():
-    game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    """ Main function """
+
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    start_view = InstructionView()
+    window.show_view(start_view)
     arcade.run()
+
     game_over = False
     player_won = False
     players_turn = True
