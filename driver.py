@@ -190,7 +190,7 @@ class GameView(arcade.View):
         # Create the roll button
         self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.default_style)
         self.h_box.add(self.roll_button.with_space_around(left=80))
-        self.roll_button.on_click = self.on_roll_click
+        self.roll_button.on_click = self.on_click_roll
         self.roll_disabled = False
 
         # Create the text for the disabled roll "button"
@@ -267,76 +267,6 @@ class GameView(arcade.View):
         """
         notesheet_view = Notesheet(self)
         self.window.show_view(notesheet_view)
-
-    # A function to flip an AI's card face down after they have refuted your guess
-    def on_mouse_press(self, x, y, button, key_modifiers):
-        # Check if the user clicked on a face_up refute card
-        cards = arcade.get_sprites_at_point((x, y), self.all_sprites)
-
-        # If they did, flip it face down again and reset the refute_card
-        if self.refute_card in cards:
-            self.refute_card.face_down()
-            self.refute_card = None
-
-    def flip_refute_card(self, card):
-        # Flip card upright
-        card.face_up()
-
-        # Move card to back of the sprites list
-        self.all_sprites.remove(card)
-        self.all_sprites.append(card)
-
-        # TODO: check that sleep works once the game loop is implemented
-        # time.sleep(10)
-
-        # wait 10 seconds, then flip the card back over
-        # card.face_down()
-
-        # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
-        # self.flip_refute_card(refute_card)
-
-    def on_roll_click(self, event):
-        if not self.roll_disabled:
-            if self.spaces_remaining == 0:
-                self.die.roll()
-                self.spaces_remaining = self.die.value
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
-                self.roll_disabled = True
-
-    # A function to flip an AI's card face down after they have refuted your guess
-    def on_mouse_press(self, x, y, button, key_modifiers):
-        # Check if the user clicked on a face_up refute card
-        cards = arcade.get_sprites_at_point((x, y), self.all_sprites)
-
-        # If they did, flip it face down again and reset the refute_card
-        if self.refute_card in cards:
-            self.refute_card.face_down()
-            self.refute_card = None
-
-    def flip_refute_card(self, card):
-        # Flip card upright
-        card.face_up()
-
-        # Move card to back of the sprites list
-        self.all_sprites.remove(card)
-        self.all_sprites.append(card)
-
-        # TODO: check that sleep works once the game loop is implemented
-        # time.sleep(10)
-
-        # wait 10 seconds, then flip the card back over
-        # card.face_down()
-
-        # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
-        # self.flip_refute_card(refute_card)
-
-    def on_roll_click(self, event):
-        if not self.roll_disabled:
-            if self.spaces_remaining == 0:
-                self.die.roll()
-                self.spaces_remaining = self.die.value
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
-                self.roll_disabled = True
 
     def on_draw(self):
         """
@@ -448,90 +378,13 @@ class GameView(arcade.View):
         """
         save_file = "notesheet_state.json"
 
-        # Disable the UI managert and delete the save file
+        # Disable the UI manager and delete the save file
         self.ui_manager.disable
 
         # Delete the notesheet save file to reset the state
         if os.path.exists(save_file):
             os.remove(save_file)
 
-
-class InstructionView(arcade.View):
-
-    def on_show_view(self):
-        # Set the background color and reset the viewport
-        arcade.set_viewport(0, self.window.width, 0, self.window.height)
-
-    def on_draw(self):
-        """ Draw the instruction screen """
-        self.clear()
-
-        # Title
-        arcade.draw_text("Instructions", self.window.width / 2, self.window.height - 60,
-                         arcade.color.WHITE, font_size=40, anchor_x="center")
-
-        # Instructions text
-        instructions = [
-            "Objective: Deduce the murderer, weapon, and room of the crime.",
-            "",
-            "Gameplay:",
-            "1. Roll the die to move around the board using your arrow keys.",
-            "2. Enter rooms to make suggestions (murderer, weapon, room).",
-            "3. Other players must disprove your suggestion if possible.",
-            "4. Use clues to narrow down suspects, weapons, and rooms.",
-            "",
-            "Winning:",
-            "When confident, make an accusation. If correct, you win!",
-            "If incorrect, you’re out of the game.",
-            "",
-            "Click anywhere to start the game."
-        ]
-
-        # Draw each line of instructions
-        start_y = self.window.height - 120
-        for i, line in enumerate(instructions):
-            arcade.draw_text(line, self.window.width / 2, start_y - i * 25,
-                             arcade.color.LIGHT_GRAY, font_size=16, anchor_x="center")
-
-        # Footer
-        arcade.draw_text("Click to start", self.window.width / 2, 30,
-                         arcade.color.WHITE, font_size=18, anchor_x="center")
-
-    def on_mouse_press(self, _x, _y, _button, _modifiers):
-        """ Start the game when the mouse is pressed """
-        game_view = GameView()
-        game_view.setup()
-        self.window.show_view(game_view)
-
-
-
-class GameOverView(arcade.View):
-    """ View to show when game is over """
-
-    def __init__(self):
-        """ This is run once when we switch to this view """
-        super().__init__()
-        #self.texture = arcade.load_texture("game_over.png")
-
-        # Reset the viewport, necessary if we have a scrolling game and we need
-        # to reset the viewport back to the start so we can see what we draw.
-        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
-
-    def on_draw(self):
-        """ Draw this view """
-        self.clear()
-        # TODO: Add text to screen, maybe background overlaid
-        arcade.draw_text("Game Over Screen", self.window.width / 2, self.window.height / 2,
-                         arcade.color.WHITE, font_size=50, anchor_x="center")
-        arcade.draw_text("Click to advance", self.window.width / 2, self.window.height / 2-75,
-                         arcade.color.WHITE, font_size=20, anchor_x="center")
-
-    def on_mouse_press(self, _x, _y, _button, _modifiers):
-        """ If the user presses the mouse button, re-start the game. """
-        game_view = GameView()
-        game_view.setup()
-        self.window.show_view(game_view)
-    
 
 class InstructionView(arcade.View):
 
