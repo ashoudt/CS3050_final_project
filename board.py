@@ -32,11 +32,20 @@ class Room:
         self.boundaries = boundaries
         self.accessible = accessible
 
+class Door:
+    def __init__(self, boundaries, entry_direction):
+        """
+        Create a door with a row, col, and direction of entry
+        Boundaries are in format (row, col)
+        """
+        self.boundaries = boundaries
+        self.entry_direction = entry_direction
+
 
 class Board():
     def __init__(self):
         """
-        Set up the application.
+        Set up the board
         """
         super().__init__()
 
@@ -74,7 +83,9 @@ class Board():
 
         # Define doors for the rooms
         self.doors = [
-            (4, 5), (12, 1), (8, 6), (12, 3), (15,7), (19,6), (19,8),
-            (16,11), (16,12), (17,17), (15,17), (11,15), (6,19), 
-            (4,16), (7,14), (7,9), (4,7)
+            Door((4, 5), "LEFT"), Door((12, 1), "DOWN"), Door((8, 6), "LEFT"), Door((12, 3), "UP"),
+            Door((15,7), "LEFT"), Door((19,6), "UP"), Door((19,8), "RIGHT"), Door((16,11), "UP"), 
+            Door((16,12), "UP"), Door((17,17), "UP"), Door((15,17), "DOWN"), Door((11,15), "RIGHT"), 
+            Door((6,19), "DOWN"), Door((4,16), "LEFT"), Door((7,14), "DOWN"), Door((7,9), "DOWN"), 
+            Door((4,7), "RIGHT")
         ]
