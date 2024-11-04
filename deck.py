@@ -1,5 +1,6 @@
 # Define functions to maintain a deck of cards
 import random
+
 import arcade
 
 # ***Define our constants (size of assets/values)***
@@ -134,6 +135,30 @@ class Deck:
 
     def get_all_cards(self):
         return self.all_decks
+
+    # A function that takes guess cards and sees if any other players can refute the guess
+    # Returns True and the card if found, and false and NULL/None if not
+    def refute_guess(self, guessed_cards, decks, guessers_deck):
+        # Loop through all cards in each deck
+        for deck in decks:
+            for card in deck:
+                # If card is in a deck that ISN'T the guesser's deck, return the card
+                if card in guessed_cards and card not in guessers_deck:
+                    # TODO: Add functionality for AIs and players to write this value to note sheet
+                    print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
+                    return True, card
+
+        # The card wasn't found
+        print("The other players cannot refute your guess")
+        return False, None
+
+        # Example of calling the refute_guess function (would be called in driver.py)
+        # guessed_cards = []
+        # ai_deck = self.all_decks[1]  # Choose 3 random cards from an ai (for testing only)
+        # for i in range(0, 3):
+        #     print(f'Guessed card: {ai_deck[i].value}')
+        #     guessed_cards.append(ai_deck[i])
+        # found, self.refute_card = self.deck.refute_guess(guessed_cards, self.all_decks, self.all_decks[0])  # return true, the card found
 
     def get_killer(self):
         return self.killer_cards
