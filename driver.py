@@ -161,9 +161,9 @@ class GameView(arcade.View):
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
-        for self.player_deck in self.all_decks:
-            for self.card in self.player_deck:
-                self.all_sprites.append(self.card)
+        for player_deck in self.all_decks:
+            for card in player_deck:
+                self.all_sprites.append(card)
 
         # Create UI manager for buttons and notesheet
         self.ui_manager = arcade.gui.UIManager()
@@ -182,7 +182,12 @@ class GameView(arcade.View):
         # Create a button layout
         self.h_box = arcade.gui.UIBoxLayout(vertical=False)
 
-        # Create the roll button and disabled roll button
+        # Create the notesheet button
+        self.notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=self.default_style)
+        self.h_box.add(self.notesheet_button.with_space_around(right=60))
+        self.notesheet_button.on_click = self.on_click_notesheet
+
+        # Create the roll button
         self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.default_style)
         self.h_box.add(self.roll_button.with_space_around(left=80))
         self.roll_button.on_click = self.on_roll_click
@@ -210,10 +215,6 @@ class GameView(arcade.View):
             arcade.color.WHITE,
             DEFAULT_FONT_SIZE,
         )
-        # Create the Notesheet buttom
-        self.notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=self.default_style)
-        self.h_box.add(self.notesheet_button.with_space_around(right=60))
-        self.notesheet_button.on_click = self.on_click_notesheet
 
         # Position the buttons 
         self.ui_manager.add(
@@ -301,35 +302,6 @@ class GameView(arcade.View):
                 self.spaces_remaining = self.die.value
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
                 self.roll_disabled = True
-
-        # Create the roll button and disabled roll button
-        self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=self.game_ui.default_style)
-        self.game_ui.h_box.add(self.roll_button.with_space_around(left=80))
-        self.roll_button.on_click = self.on_roll_click
-        self.roll_disabled = False
-
-        # Create the text for the disabled roll "button"
-        disabled_roll_text_x = 426
-        disabled_roll_text_y = 31
-        self.disabled_roll_text = arcade.Text(
-            "Roll",
-            disabled_roll_text_x,
-            disabled_roll_text_y,
-            arcade.color.WHITE,
-            font_size=15,
-            font_name=("calibri", "arial")
-        )
-
-        # Create the text for how many spaces remaining
-        spaces_left_text_x = 565
-        spaces_left_text_y = 30
-        self.spaces_left_text = arcade.Text(
-            f"Spaces Left: {self.spaces_remaining}",
-            spaces_left_text_x,
-            spaces_left_text_y,
-            arcade.color.WHITE,
-            DEFAULT_FONT_SIZE,
-        )
 
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
