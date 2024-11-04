@@ -1,131 +1,248 @@
-import tkinter as tk
-from tkinter import ttk
+import arcade
+import arcade.gui
 import json
 import os
 
-# Initiate file to save the notesheet state
+# Constants for layout
+SCREEN_WIDTH = 750
+SCREEN_HEIGHT = 750
+GRID_CELL_SIZE = 50
+GRID_MARGIN = 10
+TEXT_AREA_WIDTH = 450
+TEXT_AREA_HEIGHT = 200
+
+# File to save/load notes
 SAVE_FILE = "notesheet_state.json"
 
-class Notesheet:
-    """ 
-    Create and manage the notesheet within the game.
+# Initialize list of names for suspects, weapons, and rooms
+SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
+WEAPONS = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope", "Wrench"]
+ROOMS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
 
-    Provide suggestion and button capabilities.
-    """
-
-    def __init__(self, manager):
-        self.manager = manager
-        self.manager.title("Notesheet")
-
-        # Create main frame for notesheet
-        self.frame = ttk.Frame(self.manager, padding="10")
-        self.frame.grid(row=0, column=0, sticky="nsew")
-        
-
-        # Configure grid layout
-        self.manager.grid_rowconfigure(0, weight=1)
-        self.manager.grid_columnconfigure(0, weight=1)
-
-        # Create sections for each card category
-        self.vars = {} # Dictionary to hold all check box variables
-
-        self.create_section("Suspects", ["Colonel Mustard", "Miss Scarlet", 
-                            "Mr Green", "Mrs Peacock", "Mrs White", "Professor Plum"], 0)
-        self.create_section("Weapons", ["Candle Stick", "Knife", "Lead Pipe", "Revolver", 
-                            "Rope", "Wrench"], 1)
-        self.create_section("Rooms", ["Ballroom", "Billiard Room", "Conservatory",
-                            "Dining Room", "Kitchen", "Library", "Lounge", "Study"], 2)
-        
-        # Create a section for user notes
-        notes_label = ttk.Label(self.frame, text="Your Notes:")
-        notes_label.grid(row=1, column=0, pady=(20,5), sticky="w")
-
-        self.notes_text = tk.Text(self.frame, width=50, height=10)
-        self.notes_text.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="nsew")
-
-        # Create buttons for making suggestions and accusations
-        self.create_action_buttons()
-
-        # Load saved state if available
-        self.load_data()
-
-        # Bind close event to save data when window is closed
-        self.manager.protocol("WM_DELETE_WINDOW", self.on_close)
-
-
-    def create_section(self, title, items, col):
+class Notesheet(arcade.View):
+    def __init__(self, game_view):
         """
-        Creates a section of the checklist with checkboxes
+        Initialize the Notesheet view and grid states
+        Load saved notesheet if available
         """
-        section_frame = ttk.Labelframe(self.frame, text=title, padding="10")
-        section_frame.grid(row=0, column=col, padx=10, pady=10, sticky="nsew")
+        super().__init__()
 
-        # Add check boxes for each item in the section
-        for item in items:
-            var = tk.BooleanVar()
-            checkBox = ttk.Checkbutton(section_frame, text=item, variable=var)
-            checkBox.pack(anchor="w")
-            self.vars[item] = var
+        # Store previous view for returning
+        self.game_view = game_view
 
-
-    def create_action_buttons(self):
-        """
-        Creates suggestion and accustation buttons
-        """
-        button_frame = ttk.Frame(self.frame, padding="10")
-        button_frame.grid(row=3, column=0, pady=10)
-
-        # Create buttons
-        suggest_button = ttk.Button(button_frame, text="Suggestion", command=self.suggestion)
-        accuse_button = ttk.Button(button_frame, text="Accusation", command=self.accusation)
-
-        suggest_button.pack(side="left", padx=5)
-        accuse_button.pack(side="left", padx=5)
-    
-
-    def save_data(self):
-        """
-        Save the state of check boxes and notes to a file
-        """
-        data = {
-            "checkboxes": {key: var.get() for key, var in self.vars.items()},
-            "notes": self.notes_text.get("1.0", tk.END).strip()
+        self.grid_state = {
+            "Suspects": {suspect: False for suspect in SUSPECTS},
+            "Weapons": {weapon: False for weapon in WEAPONS},
+            "Rooms": {room: False for room in ROOMS},
         }
-        with open(SAVE_FILE, "w") as f:
-            json.dump(data, f)
-        print("Data saved successfully.")
+        self.input_notes = "" # Store text area content
+        self.setup()
+        self.load_notes() # Load notes on initialization
 
-
-    def load_data(self):
+    def setup(self):
         """
-        Load the state of checkboxes and notes from a file if available
+        Set up the UI components
+        """
+        # UI Manager for buttons and text area
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+
+        # Text area for notes
+        self.text_area = arcade.gui.UIInputText(
+            x=50, 
+            y=SCREEN_HEIGHT // 2 - 275, 
+            width=TEXT_AREA_WIDTH, 
+            height=TEXT_AREA_HEIGHT, 
+            text=" "
+        )
+        self.manager.add(self.text_area)
+
+        # Suggetion button
+        self.suggest_button = arcade.gui.UIFlatButton(text="Suggest", width=100)
+        self.suggest_button.on_click = self.on_suggest_click
+        self.manager.add(arcade.gui.UIAnchorWidget(
+            anchor_x="center_x",
+            align_x=-180,
+            align_y=-SCREEN_HEIGHT // 2 + 50,
+            child=self.suggest_button
+        ))
+
+        # Accusation button
+        self.accuse_button = arcade.gui.UIFlatButton(text="Accuse", width=100)
+        self.accuse_button.on_click = self.on_accuse_click
+        self.manager.add(arcade.gui.UIAnchorWidget(
+            anchor_x="center_x",
+            align_y=-SCREEN_HEIGHT // 2 + 50,
+            child=self.accuse_button
+        ))
+
+        # Return to Game button
+        self.return_button = arcade.gui.UIFlatButton(text="Back", width=100)
+        self.return_button.on_click = self.on_return_click
+        self.manager.add(arcade.gui.UIAnchorWidget(
+            anchor_x="center_x",
+            align_x=180,
+            align_y=-SCREEN_HEIGHT // 2 + 50,
+            child=self.return_button
+        ))
+
+    def draw_grid_section(self, title, items, start_x, start_y):
+        """
+        Draw a section of the notesheet grid with a title, list of items,
+        and toggleable boxes, which indicate whether each item is marked
+        """
+        # Draw section title
+        arcade.draw_text(title, start_x, start_y, arcade.color.BLACK, 16, anchor_x="left")
+        y_offset = start_y - 30
+        for item in items:
+            # Draw item name
+            arcade.draw_text(item, start_x, y_offset, arcade.color.BLACK, 12, anchor_x="left")
+
+            # Draw grid cell (toggle box) and fill based on state
+            cell_x = start_x + 150
+            cell_y = y_offset + 10
+            color = arcade.color.LIGHT_GREEN if self.grid_state[title][item] else arcade.color.LIGHT_GRAY
+            arcade.draw_rectangle_filled(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, color)
+            arcade.draw_rectangle_outline(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, arcade.color.BLACK)
+
+            y_offset -= GRID_CELL_SIZE + GRID_MARGIN
+
+    def on_draw(self):
+        """
+        Render the Notesheet view
+        """
+        arcade.start_render()
+        arcade.set_background_color(arcade.color.ANTIQUE_BRASS)
+
+        # Draw the title at the top of the view
+        arcade.draw_text(
+            text="Notesheet",
+            start_x=50,
+            start_y=SCREEN_HEIGHT - 25,
+            color=arcade.color.BLACK,
+            font_size=16,
+            anchor_x="center"
+        )
+
+        # Draw Suspects, Weapons, and Rooms sections
+        self.draw_grid_section("Suspects", SUSPECTS, 50, SCREEN_HEIGHT - 50)
+        self.draw_grid_section("Weapons", WEAPONS, 300, SCREEN_HEIGHT - 50)
+        self.draw_grid_section("Rooms", ROOMS, 550, SCREEN_HEIGHT - 50)
+        
+        # Draw a border around the text area
+        text_area_x = 50 + TEXT_AREA_WIDTH // 2
+        text_area_y = (SCREEN_HEIGHT // 2 - 275) + TEXT_AREA_HEIGHT // 2
+        border_padding = 5
+        arcade.draw_rectangle_outline(
+            center_x=text_area_x,
+            center_y=text_area_y,
+            width=TEXT_AREA_WIDTH + border_padding,
+            height=TEXT_AREA_HEIGHT + border_padding,
+            color=arcade.color.BLACK,
+            border_width=2  
+        )
+
+    # Draw label above the text area
+        arcade.draw_text(
+            text="Enter notes here:",
+            start_x=50,  
+            start_y=SCREEN_HEIGHT // 2 - 60,
+            color=arcade.color.BLACK,
+            font_size=12
+        )
+        
+        # Draw manager elements
+        self.manager.draw()
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """
+        Handle clicks within the grid cells and toggles the state of the
+        clicked cell
+        """
+        # Check if the click is within any grid cell and toggle its state
+        for section, items in self.grid_state.items():
+            start_x, start_y = self.get_grid_start_position(section)
+            for index, item in enumerate(items):
+                cell_x = start_x + 150
+                cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
+                if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
+                    cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
+                    # Toggle the state of the grid cell
+                    self.grid_state[section][item] = not self.grid_state[section][item]
+
+    def get_grid_start_position(self, section):
+        """
+        Return the starting x and y coordinates for a specific grid section
+        (Suspects, Weapons, or Rooms)
+        """
+        # Define start positions for each section based on title
+        if section == "Suspects":
+            return 50, SCREEN_HEIGHT - 50
+        elif section == "Weapons":
+            return 300, SCREEN_HEIGHT - 50
+        elif section == "Rooms":
+            return 550, SCREEN_HEIGHT - 50
+
+    def on_suggest_click(self, event):
+        """
+        Handle the click event for suggestions
+
+        PLACEHOLDER
+        """
+        print("Suggestion made based on notes.")
+
+    def on_accuse_click(self, event):
+        """
+        Handle the click event for accusations
+
+        PLACEHOLDER
+        """
+        print("Accusation made based on notes.")
+
+    def on_return_click(self, event):
+        """
+        Handle the return button click to save notes and go back 
+        to the game view.
+        """
+        if self.game_view:
+            # Save the notes
+            self.save_notes()
+            self.window.show_view(self.game_view)
+
+
+    def save_notes(self):
+        """
+        Save the current notesheet state to a JSON file.
+        """
+        # Update custom notes from the text area
+        self.custom_notes = self.text_area.text
+
+        # Create a dictionary for saving
+        notes_data = {
+            "grid_state": self.grid_state,
+            "custom_notes": self.custom_notes
+        }
+
+        # Write to the JSON file
+        with open(SAVE_FILE, "w") as f:
+            json.dump(notes_data, f)
+
+    def load_notes(self):
+        """
+        Load the notesheet state from a JSON file, if it exists.
         """
         if os.path.exists(SAVE_FILE):
             with open(SAVE_FILE, "r") as f:
-                data = json.load(f)
-                # Restore checkbox states
-                for key, value in data.get("checkboxes", {}).items():
-                    if key in self.vars:
-                        self.vars[key].set(value)
-                # Restore notes text
-                self.notes_text.insert("1.0", data.get("notes", ""))
-            print("Data loaded successfully.")
+                notes_data = json.load(f)
+                self.grid_state = notes_data.get("grid_state", self.grid_state)
+                self.custom_notes = notes_data.get("custom_notes", "")
+                
+                # Set the loaded notes in the text area
+                self.text_area.text = self.custom_notes
+
 
     def on_close(self):
         """
-        Save data and close the window
+        Disable UI manager
         """
-        self.save_data()
-        self.manager.destroy()
-
-    def suggestion(self):
-        """
-        Handle suggestion logic (Placeholder)
-        """
-        print("Suggest action initiated")
-    
-    def accusation(self):
-        """
-        Handle accusation logic (Placeholder)
-        """
-        print("Accuse action initiated")
+        self.manager.disable()
