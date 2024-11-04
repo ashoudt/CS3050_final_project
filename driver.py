@@ -1,8 +1,9 @@
 from player import Player
 from board import Board
-from ui_elements import GameUI
 from deck import Deck
+from notesheet import Notesheet
 import arcade
+import arcade.gui
 import os
 
 # Screen dimensions
@@ -108,13 +109,15 @@ def guess():
     '''
 
 
-class Game(arcade.Window):
-    def __init__(self, width, height, title):
+class GameView(arcade.View):
+    def __init__(self):
         """
         Set up the application.
         """
-        super().__init__(width, height, title)
+        super().__init__()
+        self.setup()
 
+    def setup(self):
         # Create the board
         self.board = Board()
         self.board_size = self.board.board_size
@@ -187,8 +190,51 @@ class Game(arcade.Window):
         self.ui_manager = arcade.gui.UIManager()
         self.ui_manager.enable()
 
-        # Create the GameUI instance
-        self.game_ui = GameUI(self.ui_manager)
+        # Render buttons
+        default_style = {
+            "font_name": ("calibri", "arial"),
+            "font_size": 15,
+            "font_color": arcade.color.WHITE,
+            "border_width": 2,
+            "border_color": None,
+            "bg_color": arcade.color.RASPBERRY,
+        }
+
+        # Create a button layout
+        self.h_box = arcade.gui.UIBoxLayout(vertical=False)
+
+        # Create buttons
+        self.notesheet_button = arcade.gui.UIFlatButton(text="Notesheet", width=200, style=default_style)
+        self.h_box.add(self.notesheet_button.with_space_around(right=60))
+        self.roll_button = arcade.gui.UIFlatButton(text="Roll", width=200, style=default_style)
+        self.h_box.add(self.roll_button.with_space_around(left=60))
+
+        # Handle click events
+        self.notesheet_button.on_click = self.on_click_notesheet
+        self.roll_button.on_click = self.on_click_roll
+
+        # Position the buttons 
+        self.ui_manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="center_x",
+                align_x=-100,
+                anchor_y="center_y",
+                align_y=-335,
+                child=self.h_box)
+        )
+
+    def on_click_roll(self, event):
+        """
+        Place holder for roll actions
+        """
+        print("Roll action started")
+
+    def on_click_notesheet(self, event):
+        """
+        Switch to Notesheet view when button is clicked.
+        """
+        notesheet_view = Notesheet(self)
+        self.window.show_view(notesheet_view)
 
     def on_draw(self):
         """
@@ -196,6 +242,8 @@ class Game(arcade.Window):
         """
         # Clear the screen
         self.clear()
+        arcade.set_background_color(arcade.color.BLACK)
+
 
         # Draw the Clue board in the center of the window
         arcade.draw_texture_rectangle(self.board_center_x, self.board_center_y,
@@ -223,9 +271,11 @@ class Game(arcade.Window):
 
     def on_close(self):
         """
-        Handle close operations. 
+        Handle window close
+        Reset the notesheet on window close
         """
         save_file = "notesheet_state.json"
+
         # Disable the UI managert and delete the save file
         self.ui_manager.disable
 
@@ -233,17 +283,11 @@ class Game(arcade.Window):
         if os.path.exists(save_file):
             os.remove(save_file)
 
-        # Call the parent's on_close method to handle default close behavior
-        super().on_close()
-
-    def on_update(self, delta_time):
-        """
-        Periodic update call to keep tkinter responsive.
-        """
-        self.game_ui.update_notesheet()  # Update tkinter window
 
 def main():
-    game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    start_view = GameView()
+    window.show_view(start_view)
     arcade.run()
     GAME_IS_OVER = False
     PLAYER_WON = False
