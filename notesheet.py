@@ -38,7 +38,10 @@ class NotesheetBox(Enum):
         return items[value]
 
 
-NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY, NotesheetBox.MARKED: arcade.color.LIGHT_GREEN, NotesheetBox.SUGGEST: arcade.color.ORANGE, NotesheetBox.ACCUSE: arcade.color.RED}
+NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY,
+                    NotesheetBox.MARKED: arcade.color.LIGHT_GREEN,
+                    NotesheetBox.SUGGEST: arcade.color.ORANGE,
+                    NotesheetBox.ACCUSE: arcade.color.RED}
 
 
 class EnumEncoder(json.JSONEncoder):
@@ -139,7 +142,6 @@ class Notesheet(arcade.View):
             cell_x = start_x + 150
             cell_y = y_offset + 10
             color = NOTESHEET_COLORS[self.grid_state[title][item]]
-            # color = arcade.color.LIGHT_GREEN if self.grid_state[title][item] else arcade.color.LIGHT_GRAY
             arcade.draw_rectangle_filled(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, color)
             arcade.draw_rectangle_outline(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, arcade.color.BLACK)
 
@@ -227,7 +229,33 @@ class Notesheet(arcade.View):
 
         PLACEHOLDER
         """
-        print("Suggestion made based on notes.")
+        suspect = None
+        weapon = None
+        room = None
+        valid_guess = True
+        for section, items in self.grid_state.items():
+            for card, value in items.items():
+                if value.name == 'SUGGEST':
+                    if section == 'Suspects':
+                        if suspect is None:
+                            suspect = card
+                        else:
+                            valid_guess = False
+                    elif section == 'Weapons':
+                        if weapon is None:
+                            weapon = card
+                        else:
+                            valid_guess = False
+                    else:
+                        if room is None:
+                            room = card
+                        else:
+                            valid_guess = False
+        if suspect is None or weapon is None or room is None:
+            valid_guess = False
+        if valid_guess:
+            print(f'Suggestion: {suspect} in the {room} with the {weapon}')
+
 
     def on_accuse_click(self, event):
         """
@@ -235,7 +263,32 @@ class Notesheet(arcade.View):
 
         PLACEHOLDER
         """
-        print("Accusation made based on notes.")
+        suspect = None
+        weapon = None
+        room = None
+        valid_guess = True
+        for section, items in self.grid_state.items():
+            for card, value in items.items():
+                if value.name == 'ACCUSE':
+                    if section == 'Suspects':
+                        if suspect is None:
+                            suspect = card
+                        else:
+                            valid_guess = False
+                    elif section == 'Weapons':
+                        if weapon is None:
+                            weapon = card
+                        else:
+                            valid_guess = False
+                    else:
+                        if room is None:
+                            room = card
+                        else:
+                            valid_guess = False
+        if suspect is None or weapon is None or room is None:
+            valid_guess = False
+        if valid_guess:
+            print(f'Accusation: {suspect} in the {room} with the {weapon}')
 
     def on_return_click(self, event):
         """
@@ -255,12 +308,6 @@ class Notesheet(arcade.View):
         # Update custom notes from the text area
         self.custom_notes = self.text_area.text
 
-
-        #for section, items in self.grid_state.items():
-            #print(items)
-            #for item, value in items:
-                #print(item)
-                #print(value.value)
         # Create a dictionary for saving
         notes_data = {
             "grid_state": self.grid_state,
