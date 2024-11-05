@@ -2,6 +2,7 @@ import arcade
 import arcade.gui
 import json
 import os
+from enum import Enum
 
 # Constants for layout
 SCREEN_WIDTH = 750
@@ -19,6 +20,42 @@ SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. 
 WEAPONS = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope", "Wrench"]
 ROOMS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
 
+
+# Different notesheet states
+class NotesheetBox(Enum):
+    BLANK = 0
+    MARKED = 1
+    SUGGEST = 2
+    ACCUSE = 3
+
+    def next(self):
+        items = list(NotesheetBox)
+        value = items.index(self)
+        if value == len(items) - 1:
+            value = 0
+        else:
+            value += 1
+        return items[value]
+
+
+NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY, NotesheetBox.MARKED: arcade.color.LIGHT_GREEN, NotesheetBox.SUGGEST: arcade.color.ORANGE, NotesheetBox.ACCUSE: arcade.color.RED}
+
+
+class EnumEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if obj in NotesheetBox:
+            return {"__enum__": str(obj)}
+        return json.JSONEncoder.default(self, obj)
+
+
+def as_enum(d):
+    if "__enum__" in d:
+        name, member = d["__enum__"].split(".")
+        return NotesheetBox[member]
+    else:
+        return d
+
+
 class Notesheet(arcade.View):
     def __init__(self, game_view):
         """
@@ -31,9 +68,9 @@ class Notesheet(arcade.View):
         self.game_view = game_view
 
         self.grid_state = {
-            "Suspects": {suspect: False for suspect in SUSPECTS},
-            "Weapons": {weapon: False for weapon in WEAPONS},
-            "Rooms": {room: False for room in ROOMS},
+            "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
+            "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
+            "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
         }
         self.input_notes = "" # Store text area content
         self.setup()
@@ -101,7 +138,8 @@ class Notesheet(arcade.View):
             # Draw grid cell (toggle box) and fill based on state
             cell_x = start_x + 150
             cell_y = y_offset + 10
-            color = arcade.color.LIGHT_GREEN if self.grid_state[title][item] else arcade.color.LIGHT_GRAY
+            color = NOTESHEET_COLORS[self.grid_state[title][item]]
+            # color = arcade.color.LIGHT_GREEN if self.grid_state[title][item] else arcade.color.LIGHT_GRAY
             arcade.draw_rectangle_filled(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, color)
             arcade.draw_rectangle_outline(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, arcade.color.BLACK)
 
@@ -168,7 +206,7 @@ class Notesheet(arcade.View):
                 if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
                     cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
                     # Toggle the state of the grid cell
-                    self.grid_state[section][item] = not self.grid_state[section][item]
+                    self.grid_state[section][item] = self.grid_state[section][item].next()
 
     def get_grid_start_position(self, section):
         """
@@ -217,6 +255,12 @@ class Notesheet(arcade.View):
         # Update custom notes from the text area
         self.custom_notes = self.text_area.text
 
+
+        #for section, items in self.grid_state.items():
+            #print(items)
+            #for item, value in items:
+                #print(item)
+                #print(value.value)
         # Create a dictionary for saving
         notes_data = {
             "grid_state": self.grid_state,
@@ -225,7 +269,7 @@ class Notesheet(arcade.View):
 
         # Write to the JSON file
         with open(SAVE_FILE, "w") as f:
-            json.dump(notes_data, f)
+            json.dump(notes_data, f, cls=EnumEncoder)
 
     def load_notes(self):
         """
@@ -233,7 +277,7 @@ class Notesheet(arcade.View):
         """
         if os.path.exists(SAVE_FILE):
             with open(SAVE_FILE, "r") as f:
-                notes_data = json.load(f)
+                notes_data = json.load(f, object_hook=as_enum)
                 self.grid_state = notes_data.get("grid_state", self.grid_state)
                 self.custom_notes = notes_data.get("custom_notes", "")
                 
