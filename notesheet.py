@@ -97,7 +97,7 @@ class Notesheet(arcade.View):
         )
         self.manager.add(self.text_area)
 
-        # Suggetion button
+        # Suggestion button
         self.suggest_button = arcade.gui.UIFlatButton(text="Suggest", width=100)
         self.suggest_button.on_click = self.on_suggest_click
         self.manager.add(arcade.gui.UIAnchorWidget(
@@ -125,6 +125,11 @@ class Notesheet(arcade.View):
             align_y=-SCREEN_HEIGHT // 2 + 50,
             child=self.return_button
         ))
+
+    def on_show_view(self):
+        self.window.suspect = None
+        self.window.weapon = None
+        self.window.room = None
 
     def draw_grid_section(self, title, items, start_x, start_y):
         """
@@ -254,7 +259,15 @@ class Notesheet(arcade.View):
         if suspect is None or weapon is None or room is None:
             valid_guess = False
         if valid_guess:
-            print(f'Suggestion: {suspect} in the {room} with the {weapon}')
+            self.window.suspect = suspect
+            self.window.weapon = weapon
+            self.window.room = room
+            self.window.guess_method = 0
+            if self.game_view:
+                # Save the notes
+                self.save_notes()
+                self.manager.disable()
+                self.window.show_view(self.game_view)
 
 
     def on_accuse_click(self, event):
@@ -288,7 +301,15 @@ class Notesheet(arcade.View):
         if suspect is None or weapon is None or room is None:
             valid_guess = False
         if valid_guess:
-            print(f'Accusation: {suspect} in the {room} with the {weapon}')
+            self.window.suspect = suspect
+            self.window.weapon = weapon
+            self.window.room = room
+            self.window.guess_method = 1
+            if self.game_view:
+                # Save the notes
+                self.save_notes()
+                self.manager.disable()
+                self.window.show_view(self.game_view)
 
     def on_return_click(self, event):
         """
@@ -298,8 +319,8 @@ class Notesheet(arcade.View):
         if self.game_view:
             # Save the notes
             self.save_notes()
+            self.manager.disable()
             self.window.show_view(self.game_view)
-
 
     def save_notes(self):
         """
@@ -330,7 +351,6 @@ class Notesheet(arcade.View):
                 
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
-
 
     def on_close(self):
         """

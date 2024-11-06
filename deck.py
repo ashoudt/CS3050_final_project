@@ -11,7 +11,7 @@ CARD_SCALE = 0.75
 TOTAL_CARDS = 21
 TOTAL_GAME_CARDS = 18  # removed the 3 murderer cards
 
-SUSPECT_CARD_VALUES = ["Mrs Peacock", "Mrs White", "Miss Scarlet", "Prof Plum", "Col Mustard", "Mr Green"]
+SUSPECT_CARD_VALUES = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
 WEAPON_CARD_VALUES = ["Candlestick", "Wrench", "Rope", "Lead Pipe", "Knife", "Revolver"]
 ROOM_CARD_VALUES = ["Conservatory", "Dining Room", "Library", "Billiard Room", "Lounge", "Kitchen", "Ball Room",
                     "Study", "Hall"]
@@ -30,7 +30,7 @@ class Card(arcade.Sprite):
         self.card_height = CARD_HEIGHT * scale
 
         # Set asset based on card value
-        self.image_filename = f"assets/clue cards/{self.value.lower().replace(' ', '')}.png"
+        self.image_filename = f"assets/clue cards/{self.value.lower().replace(' ', '').replace('.', '')}.png"
         self.is_face_up = False  # Show the back of the card for non-player cards
 
         # Call the parent class from Python Arcade

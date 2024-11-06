@@ -1,4 +1,3 @@
-import time
 from player import Player
 from board import Board
 from deck import Deck
@@ -108,6 +107,7 @@ class GameView(arcade.View):
         self.deck.deal(self.num_players)
         self.all_decks = self.deck.get_all_cards()
         self.refute_card = None
+        self.killer = self.deck.get_killer()
 
         self.card_padding_from_board = 20
         self.card_padding_from_cards = 20
@@ -226,6 +226,43 @@ class GameView(arcade.View):
                 child=self.h_box)
         )
 
+    def on_show_view(self):
+        self.ui_manager.enable()
+        try:
+            if self.window.suspect is not None and self.window.weapon is not None and self.window.room is not None:
+                self.suspect = self.window.suspect
+                self.weapon = self.window.weapon
+                self.room = self.window.room
+                guess_members = [self.suspect, self.weapon, self.room]
+                if self.window.guess_method == 0:
+                    print(f'Suggestion: {self.suspect} in the {self.room} with the {self.weapon}')
+                    flipped = False
+                    for deck in self.all_decks:
+                        if flipped:
+                            break
+                        for card in deck:
+                            if card.value in guess_members and card not in self.all_decks[0]:
+                                self.flip_refute_card(card)
+                                flipped = True
+                                break
+                elif self.window.guess_method == 1:
+                    print(f'Accusation: {self.suspect} in the {self.room} with the {self.weapon}')
+                    won = True
+                    killer_values = []
+                    for answer in self.killer:
+                        killer_values.append(answer.value)
+                    print(killer_values)
+                    print(guess_members)
+                    for guess in guess_members:
+                        if guess not in killer_values:
+                            won = False
+                    if won:
+                        print("You win!!")
+                    else:
+                        print("Sorry, you lose")
+        except AttributeError:
+            pass
+
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
         # Check if the user clicked on a face_up refute card
@@ -265,6 +302,7 @@ class GameView(arcade.View):
         """
         Switch to Notesheet view when button is clicked.
         """
+        self.ui_manager.disable()
         notesheet_view = Notesheet(self)
         self.window.show_view(notesheet_view)
 
@@ -379,7 +417,7 @@ class GameView(arcade.View):
         save_file = "notesheet_state.json"
 
         # Disable the UI manager and delete the save file
-        self.ui_manager.disable
+        self.ui_manager.disable()
 
         # Delete the notesheet save file to reset the state
         if os.path.exists(save_file):
