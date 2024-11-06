@@ -271,11 +271,8 @@ class GameView(arcade.View):
 
         # If they did, flip it face down again and reset the refute_card
         if self.refute_card in cards:
-            print("face up!")
             self.refute_card.face_down()
             self.refute_card = None
-        else:
-            print("nope :,(")
 
     def flip_refute_card(self, card):
         # Flip card upright
