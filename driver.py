@@ -243,6 +243,7 @@ class GameView(arcade.View):
                         for card in deck:
                             if card.value in guess_members and card not in self.all_decks[0]:
                                 self.flip_refute_card(card)
+                                self.refute_card = card
                                 flipped = True
                                 break
                 elif self.window.guess_method == 1:
@@ -270,8 +271,11 @@ class GameView(arcade.View):
 
         # If they did, flip it face down again and reset the refute_card
         if self.refute_card in cards:
+            print("face up!")
             self.refute_card.face_down()
             self.refute_card = None
+        else:
+            print("nope :,(")
 
     def flip_refute_card(self, card):
         # Flip card upright
