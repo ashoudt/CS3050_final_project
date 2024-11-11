@@ -207,6 +207,7 @@ class GameView(arcade.View):
                             if card.value in guess_members and card not in self.all_decks[0]:
                                 self.refute_card = card
                                 self.flip_refute_card(card)
+                                self.refute_card = card
                                 flipped = True
                                 break
                     if flipped:
