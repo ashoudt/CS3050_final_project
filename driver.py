@@ -16,63 +16,6 @@ SCREEN_TITLE = "Clue Game Board with Piece Movement"
 DEFAULT_FONT_SIZE = 20
 
 
-'''
-pseudocode for main game loop
-lines marked with * at the beginning are not necessary to implement for the first deliverable
-lines marked with ? are features we may or may not add in to the final product
-
-?player selects how many opponents
-set up board
-select random character and remove it from the deck
-select random weapon and remove it from the deck
-select random room and remove it from the deck
-deal out cards to the player
-*deal out cards to each AI
-?have the players roll for turn order
-initialize game is over to false
-initialize player won to false
-initialize player's turn to true
-while not game is over
-    while player's turn
-        if player chooses to move
-            ?if they are in a room with a secret passage
-                ?ask if they would like to take the secret passage
-                ?if yes, break
-            *roll the dice
-            *give player control of their character to move that many spaces
-            *ask them to confirm their move once they have gone exactly that many spaces or entered a room
-            (For the first sprint session, just start off letting them move wherever and end their turn when they're ready)
-            if yes, take away control
-            otherwise, let them keep moving
-        if player chooses to make a suggestion and is in a valid room
-            let them select a character
-            ?pull that character into the room the player is in
-            let them select a weapon
-            submit their guess
-            if the room card, character card, and guess card are in their hand or part of the solution
-                tell them no cards were found
-            else
-                *for each AI in order of their turn
-                    *if they have at least one of the three cards, show one to the player
-                (For the first sprint session, just show the player a random card that's part of their guess)
-        if player chooses to make an accusation and is in the final room
-            let them select a person
-            let them select a weapon
-            let them select a room
-            if guess matches the solution
-                set player won to true
-            set end of game to true
-        set player's turn to false
-    *if game is over
-        *break
-    while not player's turn
-        *let the AI take their turns
-        (For the first sprint session, just set the player's turn to true again)
-
-*display ending message with solution
-(For the first sprint session, just tell the player if they won or lost)
-'''
-
 class GameView(arcade.View):
     def __init__(self):
         """
@@ -82,6 +25,11 @@ class GameView(arcade.View):
         self.setup()
 
     def setup(self):
+        self.window.suspect = None
+        self.window.weapon = None
+        self.window.room = None
+        self.window.guess_method = None
+
         # Create the board
         self.board = Board()
         self.board_size = self.board.board_size
@@ -205,6 +153,8 @@ class GameView(arcade.View):
             font_name=("calibri", "arial")
         )
 
+        self.guessed_this_turn = False
+
         # Create the text for how many spaces remaining
         spaces_left_text_x = 565
         spaces_left_text_y = 30
@@ -213,8 +163,22 @@ class GameView(arcade.View):
             spaces_left_text_x,
             spaces_left_text_y,
             arcade.color.WHITE,
-            DEFAULT_FONT_SIZE,
+            DEFAULT_FONT_SIZE
         )
+
+        # Create the text for when no one can help you
+        no_help_text_x = 220
+        no_help_text_y = 45
+        self.no_help_text = arcade.Text(
+            "No one can\nhelp you",
+            no_help_text_x,
+            no_help_text_y,
+            arcade.color.WHITE,
+            font_size=14,
+            multiline=True,
+            width=150,
+        )
+        self.show_no_help = False
 
         # Position the buttons 
         self.ui_manager.add(
@@ -235,31 +199,30 @@ class GameView(arcade.View):
                 self.room = self.window.room
                 guess_members = [self.suspect, self.weapon, self.room]
                 if self.window.guess_method == 0:
-                    print(f'Suggestion: {self.suspect} in the {self.room} with the {self.weapon}')
                     flipped = False
                     for deck in self.all_decks:
                         if flipped:
                             break
                         for card in deck:
                             if card.value in guess_members and card not in self.all_decks[0]:
+                                self.refute_card = card
                                 self.flip_refute_card(card)
                                 flipped = True
                                 break
+                    if flipped:
+                        self.show_no_help = False
+                    else:
+                        self.show_no_help = True
                 elif self.window.guess_method == 1:
-                    print(f'Accusation: {self.suspect} in the {self.room} with the {self.weapon}')
                     won = True
                     killer_values = []
                     for answer in self.killer:
                         killer_values.append(answer.value)
-                    print(killer_values)
-                    print(guess_members)
                     for guess in guess_members:
                         if guess not in killer_values:
                             won = False
-                    if won:
-                        print("You win!!")
-                    else:
-                        print("Sorry, you lose")
+                    game_over_view = GameOverView(won)
+                    self.window.show_view(game_over_view)
         except AttributeError:
             pass
 
@@ -303,7 +266,7 @@ class GameView(arcade.View):
         Switch to Notesheet view when button is clicked.
         """
         self.ui_manager.disable()
-        notesheet_view = Notesheet(self)
+        notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms))
         self.window.show_view(notesheet_view)
 
     def on_draw(self):
@@ -359,6 +322,9 @@ class GameView(arcade.View):
                                         triangle_x3, triangle_y3 - vertical_offset,
                                         arcade.color.GREEN)
 
+        if self.show_no_help:
+            self.no_help_text.draw()
+
     def on_key_press(self, key, modifiers):
         """
         Handle player movement using arrow keys.
@@ -391,6 +357,12 @@ class GameView(arcade.View):
 
     def next_turn(self):
         if self.whose_turn[0]:
+            self.spaces_remaining = 0
+            self.show_no_help = False
+            self.roll_disabled = True
+            if self.refute_card:
+                self.refute_card.face_down()
+                self.refute_card = None
             self.whose_turn[0] = False
             self.whose_turn[1] = True
         elif self.whose_turn[1]:
@@ -476,21 +448,35 @@ class InstructionView(arcade.View):
 class GameOverView(arcade.View):
     """ View to show when game is over """
 
-    def __init__(self):
+    def __init__(self, won):
         """ This is run once when we switch to this view """
         super().__init__()
+        self.won = won
         #self.texture = arcade.load_texture("game_over.png")
 
         # Reset the viewport, necessary if we have a scrolling game and we need
         # to reset the viewport back to the start so we can see what we draw.
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
 
+        # Create the text for how many spaces remaining
+        won_text_x = self.window.width / 2
+        won_text_y = self.window.height / 2
+        self.won_text = arcade.Text(
+            "Congratulations! You won!",
+            won_text_x,
+            won_text_y,
+            arcade.color.WHITE,
+            font_size=40,
+            anchor_x="center"
+        )
+        if not won:
+            self.won_text.text = "Sorry, you lost."
+
     def on_draw(self):
         """ Draw this view """
         self.clear()
         # TODO: Add text to screen, maybe background overlaid
-        arcade.draw_text("Game Over Screen", self.window.width / 2, self.window.height / 2,
-                         arcade.color.WHITE, font_size=50, anchor_x="center")
+        self.won_text.draw()
         arcade.draw_text("Click to advance", self.window.width / 2, self.window.height / 2-75,
                          arcade.color.WHITE, font_size=20, anchor_x="center")
 

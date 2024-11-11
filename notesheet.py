@@ -18,7 +18,7 @@ SAVE_FILE = "notesheet_state.json"
 # Initialize list of names for suspects, weapons, and rooms
 SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
 WEAPONS = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope", "Wrench"]
-ROOMS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
+ROOMS = ["Kitchen", "Ball Room", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
 
 
 # Different notesheet states
@@ -44,6 +44,10 @@ NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY,
                     NotesheetBox.ACCUSE: arcade.color.RED}
 
 
+'''
+Done with help from Stack Overflow:
+https://stackoverflow.com/questions/24481852/serialising-an-enum-member-to-json/24482806#24482806
+'''
 class EnumEncoder(json.JSONEncoder):
     def default(self, obj):
         if obj in NotesheetBox:
@@ -60,7 +64,7 @@ def as_enum(d):
 
 
 class Notesheet(arcade.View):
-    def __init__(self, game_view):
+    def __init__(self, game_view, player_room):
         """
         Initialize the Notesheet view and grid states
         Load saved notesheet if available
@@ -69,6 +73,8 @@ class Notesheet(arcade.View):
 
         # Store previous view for returning
         self.game_view = game_view
+
+        self.player_room = player_room
 
         self.grid_state = {
             "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
@@ -229,82 +235,36 @@ class Notesheet(arcade.View):
             return 550, SCREEN_HEIGHT - 50
 
     def on_suggest_click(self, event):
-        """
-        Handle the click event for suggestions
-
-        PLACEHOLDER
-        """
-        suspect = None
-        weapon = None
-        room = None
-        valid_guess = True
-        for section, items in self.grid_state.items():
-            for card, value in items.items():
-                if value.name == 'SUGGEST':
-                    if section == 'Suspects':
-                        if suspect is None:
-                            suspect = card
-                        else:
-                            valid_guess = False
-                    elif section == 'Weapons':
-                        if weapon is None:
-                            weapon = card
-                        else:
-                            valid_guess = False
-                    else:
-                        if room is None:
-                            room = card
-                        else:
-                            valid_guess = False
-        if suspect is None or weapon is None or room is None:
-            valid_guess = False
-        if valid_guess:
-            self.window.suspect = suspect
-            self.window.weapon = weapon
-            self.window.room = room
-            self.window.guess_method = 0
-            if self.game_view:
-                # Save the notes
-                self.save_notes()
-                self.manager.disable()
-                self.window.show_view(self.game_view)
+        self.validate_guess('SUGGEST')
 
 
     def on_accuse_click(self, event):
-        """
-        Handle the click event for accusations
+        self.validate_guess('ACCUSE')
 
-        PLACEHOLDER
-        """
-        suspect = None
-        weapon = None
-        room = None
+    def validate_guess(self, method):
+        guess = ['Suspects', 'Weapons', 'Rooms']
         valid_guess = True
         for section, items in self.grid_state.items():
             for card, value in items.items():
-                if value.name == 'ACCUSE':
-                    if section == 'Suspects':
-                        if suspect is None:
-                            suspect = card
-                        else:
-                            valid_guess = False
-                    elif section == 'Weapons':
-                        if weapon is None:
-                            weapon = card
-                        else:
-                            valid_guess = False
+                if value.name == method:
+                    if section in guess:
+                        guess[guess.index(section)] = card
                     else:
-                        if room is None:
-                            room = card
-                        else:
-                            valid_guess = False
-        if suspect is None or weapon is None or room is None:
+                        valid_guess = False
+        if 'Suspects' in guess or 'Weapons' in guess or 'Rooms' in guess:
+            valid_guess = False
+        if method == 'SUGGEST' and guess[2] != self.player_room:
+            valid_guess = False
+        if method == 'ACCUSE' and self.player_room != 'Lobby':
             valid_guess = False
         if valid_guess:
-            self.window.suspect = suspect
-            self.window.weapon = weapon
-            self.window.room = room
-            self.window.guess_method = 1
+            self.window.suspect = guess[0]
+            self.window.weapon = guess[1]
+            self.window.room = guess[2]
+            if method == 'SUGGEST':
+                self.window.guess_method = 0
+            elif method == 'ACCUSE':
+                self.window.guess_method = 1
             if self.game_view:
                 # Save the notes
                 self.save_notes()

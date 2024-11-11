@@ -64,7 +64,7 @@ class Board():
         # Create the rooms with boundaries
         self.rooms = [
             Room("Conservatory", [(0, 3, 0, 5), (4,4,1,4)], True),
-            Room("Billiards Room", [(7, 11, 0, 5)], True),
+            Room("Billiard Room", [(7, 11, 0, 5)], True),
             Room("Library", [(14, 16, 0, 0), (14, 16, 6, 6), (13, 17, 1, 5)], True),
             Room("Study", [(20, 22, 0, 6), (23, 23, 0, 5)], True),
             Room("Hall", [(17, 22, 9, 14), (23, 23, 10, 13)], True),
@@ -87,5 +87,5 @@ class Board():
             Door((15,7), "LEFT"), Door((19,6), "UP"), Door((19,8), "RIGHT"), Door((16,11), "UP"), 
             Door((16,12), "UP"), Door((17,17), "UP"), Door((15,17), "DOWN"), Door((11,15), "RIGHT"), 
             Door((6,19), "DOWN"), Door((4,16), "LEFT"), Door((7,14), "DOWN"), Door((7,9), "DOWN"), 
-            Door((4,7), "RIGHT")
+            Door((4,7), "RIGHT"), Door((16,11), "DOWN")
         ]
