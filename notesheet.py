@@ -132,6 +132,21 @@ class Notesheet(arcade.View):
             child=self.return_button
         ))
 
+        popup_text_x = SCREEN_HEIGHT / 2
+        popup_text_y = SCREEN_WIDTH / 2
+        self.popup_text = arcade.Text(
+            "Invalid Guess",
+            popup_text_x,
+            popup_text_y,
+            arcade.color.WHITE,
+            font_size=14,
+            multiline=True,
+            width=200,
+            anchor_x="center",
+            anchor_y="center"
+        )
+        self.popup_enabled = False
+
     def on_show_view(self):
         self.window.suspect = None
         self.window.weapon = None
@@ -205,21 +220,32 @@ class Notesheet(arcade.View):
         # Draw manager elements
         self.manager.draw()
 
+        if self.popup_enabled:
+            self.manager.disable()
+            arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
+                                        250, 100, arcade.color.BLACK)
+            self.popup_text.draw()
+        else:
+            self.manager.enable()
+
     def on_mouse_press(self, x, y, button, modifiers):
         """
         Handle clicks within the grid cells and toggles the state of the
         clicked cell
         """
-        # Check if the click is within any grid cell and toggle its state
-        for section, items in self.grid_state.items():
-            start_x, start_y = self.get_grid_start_position(section)
-            for index, item in enumerate(items):
-                cell_x = start_x + 150
-                cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
-                if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
-                    cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
-                    # Toggle the state of the grid cell
-                    self.grid_state[section][item] = self.grid_state[section][item].next()
+        if self.popup_enabled:
+            self.popup_enabled = False
+        else:
+            # Check if the click is within any grid cell and toggle its state
+            for section, items in self.grid_state.items():
+                start_x, start_y = self.get_grid_start_position(section)
+                for index, item in enumerate(items):
+                    cell_x = start_x + 150
+                    cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
+                    if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
+                        cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
+                        # Toggle the state of the grid cell
+                        self.grid_state[section][item] = self.grid_state[section][item].next()
 
     def get_grid_start_position(self, section):
         """
@@ -251,12 +277,16 @@ class Notesheet(arcade.View):
                         guess[guess.index(section)] = card
                     else:
                         valid_guess = False
+                        self.popup_text.text = f"Too many {section.lower()} selected\n(Click to continue)"
         if 'Suspects' in guess or 'Weapons' in guess or 'Rooms' in guess:
             valid_guess = False
+            self.popup_text.text = f"Didn't select one item from each category\n(Click to continue)"
         if method == 'SUGGEST' and guess[2] != self.player_room:
             valid_guess = False
+            self.popup_text.text = f"Not in the room you're suggesting\n(Click to continue)"
         if method == 'ACCUSE' and self.player_room != 'Lobby':
             valid_guess = False
+            self.popup_text.text = f"Not in the Lobby for an accusation\n(Click to continue)"
         if valid_guess:
             self.window.suspect = guess[0]
             self.window.weapon = guess[1]
@@ -270,6 +300,8 @@ class Notesheet(arcade.View):
                 self.save_notes()
                 self.manager.disable()
                 self.window.show_view(self.game_view)
+        else:
+            self.popup_enabled = True
 
     def on_return_click(self, event):
         """
