@@ -64,7 +64,7 @@ def as_enum(d):
 
 
 class Notesheet(arcade.View):
-    def __init__(self, game_view, player_room):
+    def __init__(self, game_view, player_room, players_turn):
         """
         Initialize the Notesheet view and grid states
         Load saved notesheet if available
@@ -75,6 +75,8 @@ class Notesheet(arcade.View):
         self.game_view = game_view
 
         self.player_room = player_room
+
+        self.players_turn = players_turn
 
         self.grid_state = {
             "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
@@ -89,6 +91,7 @@ class Notesheet(arcade.View):
         """
         Set up the UI components
         """
+
         # UI Manager for buttons and text area
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
@@ -220,6 +223,13 @@ class Notesheet(arcade.View):
         # Draw manager elements
         self.manager.draw()
 
+        if self.players_turn:
+            self.accuse_button.on_click = self.on_accuse_click
+            self.suggest_button.on_click = self.on_suggest_click
+        else:
+            self.accuse_button.on_click = self.on_other_turn_click
+            self.suggest_button.on_click = self.on_other_turn_click
+
         if self.popup_enabled:
             self.manager.disable()
             arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
@@ -266,6 +276,10 @@ class Notesheet(arcade.View):
 
     def on_accuse_click(self, event):
         self.validate_guess('ACCUSE')
+
+    def on_other_turn_click(self, event):
+        self.popup_enabled = True
+        self.popup_text.text = "It's not your turn\n(Click to continue)"
 
     def validate_guess(self, method):
         guess = ['Suspects', 'Weapons', 'Rooms']

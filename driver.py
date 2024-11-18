@@ -192,40 +192,42 @@ class GameView(arcade.View):
 
     def on_show_view(self):
         self.ui_manager.enable()
-        try:
-            if self.window.suspect is not None and self.window.weapon is not None and self.window.room is not None:
-                self.suspect = self.window.suspect
-                self.weapon = self.window.weapon
-                self.room = self.window.room
-                guess_members = [self.suspect, self.weapon, self.room]
-                if self.window.guess_method == 0:
-                    flipped = False
-                    for deck in self.all_decks:
-                        if flipped:
-                            break
-                        for card in deck:
-                            if card.value in guess_members and card not in self.all_decks[0]:
-                                self.refute_card = card
-                                self.flip_refute_card(card)
-                                self.refute_card = card
-                                flipped = True
+        if self.whose_turn[0] == True:
+            try:
+                if self.window.suspect is not None and self.window.weapon is not None and self.window.room is not None:
+                    self.spaces_remaining = 0
+                    self.suspect = self.window.suspect
+                    self.weapon = self.window.weapon
+                    self.room = self.window.room
+                    guess_members = [self.suspect, self.weapon, self.room]
+                    if self.window.guess_method == 0:
+                        flipped = False
+                        for deck in self.all_decks:
+                            if flipped:
                                 break
-                    if flipped:
-                        self.show_no_help = False
-                    else:
-                        self.show_no_help = True
-                elif self.window.guess_method == 1:
-                    won = True
-                    killer_values = []
-                    for answer in self.killer:
-                        killer_values.append(answer.value)
-                    for guess in guess_members:
-                        if guess not in killer_values:
-                            won = False
-                    game_over_view = GameOverView(won)
-                    self.window.show_view(game_over_view)
-        except AttributeError:
-            pass
+                            for card in deck:
+                                if card.value in guess_members and card not in self.all_decks[0]:
+                                    self.refute_card = card
+                                    self.flip_refute_card(card)
+                                    self.refute_card = card
+                                    flipped = True
+                                    break
+                        if flipped:
+                            self.show_no_help = False
+                        else:
+                            self.show_no_help = True
+                    elif self.window.guess_method == 1:
+                        won = True
+                        killer_values = []
+                        for answer in self.killer:
+                            killer_values.append(answer.value)
+                        for guess in guess_members:
+                            if guess not in killer_values:
+                                won = False
+                        game_over_view = GameOverView(won)
+                        self.window.show_view(game_over_view)
+            except AttributeError:
+                pass
 
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
@@ -236,6 +238,7 @@ class GameView(arcade.View):
         if self.refute_card in cards:
             self.refute_card.face_down()
             self.refute_card = None
+            self.next_turn()
 
     def flip_refute_card(self, card):
         # Flip card upright
@@ -267,7 +270,7 @@ class GameView(arcade.View):
         Switch to Notesheet view when button is clicked.
         """
         self.ui_manager.disable()
-        notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms))
+        notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
         self.window.show_view(notesheet_view)
 
     def on_draw(self):
@@ -299,6 +302,7 @@ class GameView(arcade.View):
         if self.spaces_remaining != 0:
             self.spaces_left_text.draw()
 
+
         card_width = 81
         card_height = 93
         padding_from_card = 10
@@ -322,6 +326,11 @@ class GameView(arcade.View):
                                         triangle_x2, triangle_y2 - vertical_offset,
                                         triangle_x3, triangle_y3 - vertical_offset,
                                         arcade.color.GREEN)
+
+        if self.refute_card:
+            self.ui_manager.disable()
+        else:
+            self.ui_manager.enable()
 
         if self.show_no_help:
             self.no_help_text.draw()
@@ -355,6 +364,8 @@ class GameView(arcade.View):
                 self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+            if self.spaces_remaining == 0:
+                self.next_turn()
 
     def next_turn(self):
         if self.whose_turn[0]:
@@ -495,41 +506,6 @@ def main():
     start_view = InstructionView()
     window.show_view(start_view)
     arcade.run()
-
-    game_over = False
-    player_won = False
-    players_turn = True
-    while not game_over:
-        while players_turn:
-            #if move button is pressed
-                #give the player control
-                # if player not in a room
-                #disable suggestion and accusation buttons
-            #if suggestion button is pressed
-                #guessedSuspect, guessedWeapon, guessedRoom = guess()
-                #if guessedSuspect not in decks and guessedWeapon not in dealtCards and guessedRoom not in dealtCards:
-                    #print("No one can give you any new information")
-                #else
-                    #if guessedSuspect in dealtCards:
-                        #print("Someone else has", guessedSuspect)
-                    #elif guessedWeapon in dealtCards:
-                        #print("Someone else has", guessedWeapon)
-                    #elif guessedRoom in dealtCards:
-                        #print("Someone else has", guessedRoom)
-
-            # if player in the final room
-            #if playerIsActing("make an accusation"):
-                #guessedSuspect, guessedWeapon, guessedRoom = guess()
-                #if solution == [guessedSuspect, guessedWeapon, guessedRoom]:
-                    #PLAYER_WON = True
-                #GAME_IS_OVER = True
-            players_turn = False
-        while not players_turn:
-            players_turn = True
-    if player_won:
-        print("Congrats, you won!")
-    else:
-        print("Sorry, you lost")
 
 
 if __name__ == "__main__":
