@@ -270,7 +270,10 @@ class GameView(arcade.View):
         Switch to Notesheet view when button is clicked.
         """
         self.ui_manager.disable()
-        notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
+        if self.refute_card:
+            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), False)
+        else:
+            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
         self.window.show_view(notesheet_view)
 
     def on_draw(self):
@@ -326,11 +329,6 @@ class GameView(arcade.View):
                                         triangle_x2, triangle_y2 - vertical_offset,
                                         triangle_x3, triangle_y3 - vertical_offset,
                                         arcade.color.GREEN)
-
-        if self.refute_card:
-            self.ui_manager.disable()
-        else:
-            self.ui_manager.enable()
 
         if self.show_no_help:
             self.no_help_text.draw()
