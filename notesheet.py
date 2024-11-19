@@ -2,6 +2,7 @@ import arcade
 import arcade.gui
 import json
 import os
+from enum import Enum
 
 # Constants for layout
 SCREEN_WIDTH = 750
@@ -17,10 +18,53 @@ SAVE_FILE = "notesheet_state.json"
 # Initialize list of names for suspects, weapons, and rooms
 SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
 WEAPONS = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope", "Wrench"]
-ROOMS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
+ROOMS = ["Kitchen", "Ball Room", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
+
+
+# Different notesheet states
+class NotesheetBox(Enum):
+    BLANK = 0
+    MARKED = 1
+    SUGGEST = 2
+    ACCUSE = 3
+
+    def next(self):
+        items = list(NotesheetBox)
+        value = items.index(self)
+        if value == len(items) - 1:
+            value = 0
+        else:
+            value += 1
+        return items[value]
+
+
+NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY,
+                    NotesheetBox.MARKED: arcade.color.LIGHT_GREEN,
+                    NotesheetBox.SUGGEST: arcade.color.ORANGE,
+                    NotesheetBox.ACCUSE: arcade.color.RED}
+
+
+'''
+Done with help from Stack Overflow:
+https://stackoverflow.com/questions/24481852/serialising-an-enum-member-to-json/24482806#24482806
+'''
+class EnumEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if obj in NotesheetBox:
+            return {"__enum__": str(obj)}
+        return json.JSONEncoder.default(self, obj)
+
+
+def as_enum(d):
+    if "__enum__" in d:
+        name, member = d["__enum__"].split(".")
+        return NotesheetBox[member]
+    else:
+        return d
+
 
 class Notesheet(arcade.View):
-    def __init__(self, game_view):
+    def __init__(self, game_view, player_room, players_turn):
         """
         Initialize the Notesheet view and grid states
         Load saved notesheet if available
@@ -30,10 +74,14 @@ class Notesheet(arcade.View):
         # Store previous view for returning
         self.game_view = game_view
 
+        self.player_room = player_room
+
+        self.players_turn = players_turn
+
         self.grid_state = {
-            "Suspects": {suspect: False for suspect in SUSPECTS},
-            "Weapons": {weapon: False for weapon in WEAPONS},
-            "Rooms": {room: False for room in ROOMS},
+            "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
+            "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
+            "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
         }
         self.input_notes = "" # Store text area content
         self.setup()
@@ -43,6 +91,7 @@ class Notesheet(arcade.View):
         """
         Set up the UI components
         """
+
         # UI Manager for buttons and text area
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
@@ -57,7 +106,7 @@ class Notesheet(arcade.View):
         )
         self.manager.add(self.text_area)
 
-        # Suggetion button
+        # Suggestion button
         self.suggest_button = arcade.gui.UIFlatButton(text="Suggest", width=100)
         self.suggest_button.on_click = self.on_suggest_click
         self.manager.add(arcade.gui.UIAnchorWidget(
@@ -86,6 +135,26 @@ class Notesheet(arcade.View):
             child=self.return_button
         ))
 
+        popup_text_x = SCREEN_HEIGHT / 2
+        popup_text_y = SCREEN_WIDTH / 2
+        self.popup_text = arcade.Text(
+            "Invalid Guess",
+            popup_text_x,
+            popup_text_y,
+            arcade.color.WHITE,
+            font_size=14,
+            multiline=True,
+            width=200,
+            anchor_x="center",
+            anchor_y="center"
+        )
+        self.popup_enabled = False
+
+    def on_show_view(self):
+        self.window.suspect = None
+        self.window.weapon = None
+        self.window.room = None
+
     def draw_grid_section(self, title, items, start_x, start_y):
         """
         Draw a section of the notesheet grid with a title, list of items,
@@ -101,7 +170,7 @@ class Notesheet(arcade.View):
             # Draw grid cell (toggle box) and fill based on state
             cell_x = start_x + 150
             cell_y = y_offset + 10
-            color = arcade.color.LIGHT_GREEN if self.grid_state[title][item] else arcade.color.LIGHT_GRAY
+            color = NOTESHEET_COLORS[self.grid_state[title][item]]
             arcade.draw_rectangle_filled(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, color)
             arcade.draw_rectangle_outline(cell_x, cell_y, GRID_CELL_SIZE, GRID_CELL_SIZE, arcade.color.BLACK)
 
@@ -154,21 +223,39 @@ class Notesheet(arcade.View):
         # Draw manager elements
         self.manager.draw()
 
+        if self.players_turn:
+            self.accuse_button.on_click = self.on_accuse_click
+            self.suggest_button.on_click = self.on_suggest_click
+        else:
+            self.accuse_button.on_click = self.on_other_turn_click
+            self.suggest_button.on_click = self.on_other_turn_click
+
+        if self.popup_enabled:
+            self.manager.disable()
+            arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
+                                        250, 100, arcade.color.BLACK)
+            self.popup_text.draw()
+        else:
+            self.manager.enable()
+
     def on_mouse_press(self, x, y, button, modifiers):
         """
         Handle clicks within the grid cells and toggles the state of the
         clicked cell
         """
-        # Check if the click is within any grid cell and toggle its state
-        for section, items in self.grid_state.items():
-            start_x, start_y = self.get_grid_start_position(section)
-            for index, item in enumerate(items):
-                cell_x = start_x + 150
-                cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
-                if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
-                    cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
-                    # Toggle the state of the grid cell
-                    self.grid_state[section][item] = not self.grid_state[section][item]
+        if self.popup_enabled:
+            self.popup_enabled = False
+        else:
+            # Check if the click is within any grid cell and toggle its state
+            for section, items in self.grid_state.items():
+                start_x, start_y = self.get_grid_start_position(section)
+                for index, item in enumerate(items):
+                    cell_x = start_x + 150
+                    cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
+                    if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
+                        cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
+                        # Toggle the state of the grid cell
+                        self.grid_state[section][item] = self.grid_state[section][item].next()
 
     def get_grid_start_position(self, section):
         """
@@ -184,20 +271,51 @@ class Notesheet(arcade.View):
             return 550, SCREEN_HEIGHT - 50
 
     def on_suggest_click(self, event):
-        """
-        Handle the click event for suggestions
+        self.validate_guess('SUGGEST')
 
-        PLACEHOLDER
-        """
-        print("Suggestion made based on notes.")
 
     def on_accuse_click(self, event):
-        """
-        Handle the click event for accusations
+        self.validate_guess('ACCUSE')
 
-        PLACEHOLDER
-        """
-        print("Accusation made based on notes.")
+    def on_other_turn_click(self, event):
+        self.popup_enabled = True
+        self.popup_text.text = "It's not your turn\n(Click to continue)"
+
+    def validate_guess(self, method):
+        guess = ['Suspects', 'Weapons', 'Rooms']
+        valid_guess = True
+        for section, items in self.grid_state.items():
+            for card, value in items.items():
+                if value.name == method:
+                    if section in guess:
+                        guess[guess.index(section)] = card
+                    else:
+                        valid_guess = False
+                        self.popup_text.text = f"Too many {section.lower()} selected\n(Click to continue)"
+        if 'Suspects' in guess or 'Weapons' in guess or 'Rooms' in guess:
+            valid_guess = False
+            self.popup_text.text = f"Didn't select one item from each category\n(Click to continue)"
+        if method == 'SUGGEST' and guess[2] != self.player_room:
+            valid_guess = False
+            self.popup_text.text = f"Not in the room you're suggesting\n(Click to continue)"
+        if method == 'ACCUSE' and self.player_room != 'Lobby':
+            valid_guess = False
+            self.popup_text.text = f"Not in the Lobby for an accusation\n(Click to continue)"
+        if valid_guess:
+            self.window.suspect = guess[0]
+            self.window.weapon = guess[1]
+            self.window.room = guess[2]
+            if method == 'SUGGEST':
+                self.window.guess_method = 0
+            elif method == 'ACCUSE':
+                self.window.guess_method = 1
+            if self.game_view:
+                # Save the notes
+                self.save_notes()
+                self.manager.disable()
+                self.window.show_view(self.game_view)
+        else:
+            self.popup_enabled = True
 
     def on_return_click(self, event):
         """
@@ -210,8 +328,8 @@ class Notesheet(arcade.View):
         if self.game_view:
             # Save the notes
             self.save_notes()
+            self.manager.disable()
             self.window.show_view(self.game_view)
-
 
     def save_notes(self):
         """
@@ -228,7 +346,7 @@ class Notesheet(arcade.View):
 
         # Write to the JSON file
         with open(SAVE_FILE, "w") as f:
-            json.dump(notes_data, f)
+            json.dump(notes_data, f, cls=EnumEncoder)
 
     def load_notes(self):
         """
@@ -236,9 +354,16 @@ class Notesheet(arcade.View):
         """
         if os.path.exists(SAVE_FILE):
             with open(SAVE_FILE, "r") as f:
-                notes_data = json.load(f)
+                notes_data = json.load(f, object_hook=as_enum)
                 self.grid_state = notes_data.get("grid_state", self.grid_state)
                 self.custom_notes = notes_data.get("custom_notes", "")
                 
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
+
+    def on_close(self):
+        """
+        Disable UI manager
+        """
+        self.manager.disable()
+
