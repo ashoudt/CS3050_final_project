@@ -295,6 +295,9 @@ class Notesheet(arcade.View):
         Handle the return button click to save notes and go back 
         to the game view.
         """
+        #Disable the entire UI manager
+        self.manager.disable()
+        
         if self.game_view:
             # Save the notes
             self.save_notes()
@@ -331,9 +334,3 @@ class Notesheet(arcade.View):
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
 
-
-    def on_close(self):
-        """
-        Disable UI manager
-        """
-        self.manager.disable()

@@ -92,16 +92,17 @@ class GameView(arcade.View):
 
         # Keep track of whose turn it currently is
         self.whose_turn = [True, False, False, False]
+        self.ai_turn_completed = False  
 
         # Create the player piece
         piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
         self.player_piece = Player(piece_image, 0.4, 4, 7,
                                    self.board_size, self.board_center_x, self.board_center_y)
 
-        # Create the die
+        # Create a die for each player
         self.die = Die(1.25)
         self.spaces_remaining = 0
-
+        
         # Create the deck and deal out the cards
         self.deck = Deck()
         self.num_players = 4
@@ -159,8 +160,9 @@ class GameView(arcade.View):
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
-        self.all_sprites.append(self.die)
         self.all_sprites.append(self.player_piece)
+        # Append each die individually to self.all_sprites
+        self.all_sprites.append(self.die)
         for player_deck in self.all_decks:
             for card in player_deck:
                 self.all_sprites.append(card)
@@ -254,12 +256,48 @@ class GameView(arcade.View):
         # self.flip_refute_card(refute_card)
 
     def on_click_roll(self, event):
-        if not self.roll_disabled:
+        if not self.roll_disabled and self.whose_turn[0]:
             if self.spaces_remaining == 0:
-                self.die.roll()
-                self.spaces_remaining = self.die.value
+                current_die = self.die
+                current_die.roll()
+                self.spaces_remaining = current_die.value
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
                 self.roll_disabled = True
+
+    def roll_die_for_current_player(self):
+        """
+        Roll the die for the current player. Use specific logic for each AI player.
+        """
+        current_player_index = self.whose_turn.index(True)
+
+        if current_player_index == 0:
+            # Enable roll button 
+            self.roll_disabled = False
+
+        # AI Player 1
+        elif current_player_index == 1:
+            if not self.ai_turn_completed and self.spaces_remaining == 0:
+                self.roll_disabled = True  
+                self.die.roll()
+                self.spaces_remaining = self.die.value
+                print(f"AI Player 1 rolled a {self.spaces_remaining}")
+
+        # AI Player 2   
+        elif current_player_index == 2:
+            if not self.ai_turn_completed and self.spaces_remaining == 0:
+                self.roll_disabled = True
+                self.die.roll()
+                self.spaces_remaining = self.die.value
+                print(f"AI Player 2 rolled a {self.spaces_remaining}")
+
+        # AI Player 3
+        elif current_player_index == 3:
+            if not self.ai_turn_completed and self.spaces_remaining == 0:
+                self.roll_disabled = True
+                self.die.roll()
+                self.spaces_remaining = self.die.value
+                print(f"AI Player 3 rolled a {self.spaces_remaining}")
+
 
     def on_click_notesheet(self, event):
         """
@@ -366,10 +404,31 @@ class GameView(arcade.View):
             self.whose_turn[0] = True
             self.roll_disabled = False
 
+        # Reset spaces for the next player
+        self.spaces_remaining = 0 
+        # Reset AI turn state
+        self.ai_turn_completed = False
+        # Handle dice roll for the next player
+        self.roll_die_for_current_player()  
+
     def update_spaces_left(self, last_row, last_col):
         if not self.player_piece.within_a_room(self.board.rooms):
             if self.player_piece.row != last_row or self.player_piece.column != last_col:
                 self.spaces_remaining -= 1
+
+    def on_update(self, delta_time):
+        """
+        Update animations and handle AI rolls.
+        """
+        self.die.update_animation()
+
+        # Automatically handle AI players' rolls if it's not the user's turn
+        if not self.whose_turn[0]: 
+            self.roll_die_for_current_player()
+            
+            # If the AI has rolled, proceed to the next turn
+            if self.ai_turn_completed:
+                self.next_turn()
 
     def on_close(self):
         """
