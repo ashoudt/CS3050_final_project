@@ -535,11 +535,11 @@ class PlayerSelectionView(arcade.View):
         # List of character cards with images
         self.characters = [
             ("Miss Scarlet", "assets/clue cards/missscarlet.png"),
-            ("Colonel Mustard", "assets/clue cards/colmustard.png"),
+            ("Colonel Mustard", "assets/clue cards/colonelmustard.png"),
             ("Mrs. White", "assets/clue cards/mrswhite.png"),
             ("Mr. Green", "assets/clue cards/mrgreen.png"),
             ("Mrs. Peacock", "assets/clue cards/mrspeacock.png"),
-            ("Professor Plum", "assets/clue cards/profplum.png")
+            ("Professor Plum", "assets/clue cards/professorplum.png")
         ]
 
         # Track selected character button
