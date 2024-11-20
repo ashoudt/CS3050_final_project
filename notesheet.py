@@ -18,7 +18,7 @@ SAVE_FILE = "notesheet_state.json"
 # Initialize list of names for suspects, weapons, and rooms
 SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
 WEAPONS = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope", "Wrench"]
-ROOMS = ["Kitchen", "Ballroom", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
+ROOMS = ["Kitchen", "Ball Room", "Conservatory", "Dining Room", "Lounge", "Hall", "Study", "Library", "Billiard Room"]
 
 
 # Different notesheet states
@@ -44,6 +44,10 @@ NOTESHEET_COLORS = {NotesheetBox.BLANK: arcade.color.LIGHT_GRAY,
                     NotesheetBox.ACCUSE: arcade.color.RED}
 
 
+'''
+Done with help from Stack Overflow:
+https://stackoverflow.com/questions/24481852/serialising-an-enum-member-to-json/24482806#24482806
+'''
 class EnumEncoder(json.JSONEncoder):
     def default(self, obj):
         if obj in NotesheetBox:
@@ -60,7 +64,7 @@ def as_enum(d):
 
 
 class Notesheet(arcade.View):
-    def __init__(self, game_view):
+    def __init__(self, game_view, player_room, players_turn):
         """
         Initialize the Notesheet view and grid states
         Load saved notesheet if available
@@ -69,6 +73,10 @@ class Notesheet(arcade.View):
 
         # Store previous view for returning
         self.game_view = game_view
+
+        self.player_room = player_room
+
+        self.players_turn = players_turn
 
         self.grid_state = {
             "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
@@ -83,6 +91,7 @@ class Notesheet(arcade.View):
         """
         Set up the UI components
         """
+
         # UI Manager for buttons and text area
         self.manager = arcade.gui.UIManager()
         self.manager.enable()
@@ -97,7 +106,7 @@ class Notesheet(arcade.View):
         )
         self.manager.add(self.text_area)
 
-        # Suggetion button
+        # Suggestion button
         self.suggest_button = arcade.gui.UIFlatButton(text="Suggest", width=100)
         self.suggest_button.on_click = self.on_suggest_click
         self.manager.add(arcade.gui.UIAnchorWidget(
@@ -125,6 +134,26 @@ class Notesheet(arcade.View):
             align_y=-SCREEN_HEIGHT // 2 + 50,
             child=self.return_button
         ))
+
+        popup_text_x = SCREEN_HEIGHT / 2
+        popup_text_y = SCREEN_WIDTH / 2
+        self.popup_text = arcade.Text(
+            "Invalid Guess",
+            popup_text_x,
+            popup_text_y,
+            arcade.color.WHITE,
+            font_size=14,
+            multiline=True,
+            width=200,
+            anchor_x="center",
+            anchor_y="center"
+        )
+        self.popup_enabled = False
+
+    def on_show_view(self):
+        self.window.suspect = None
+        self.window.weapon = None
+        self.window.room = None
 
     def draw_grid_section(self, title, items, start_x, start_y):
         """
@@ -194,21 +223,39 @@ class Notesheet(arcade.View):
         # Draw manager elements
         self.manager.draw()
 
+        if self.players_turn:
+            self.accuse_button.on_click = self.on_accuse_click
+            self.suggest_button.on_click = self.on_suggest_click
+        else:
+            self.accuse_button.on_click = self.on_other_turn_click
+            self.suggest_button.on_click = self.on_other_turn_click
+
+        if self.popup_enabled:
+            self.manager.disable()
+            arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
+                                        250, 100, arcade.color.BLACK)
+            self.popup_text.draw()
+        else:
+            self.manager.enable()
+
     def on_mouse_press(self, x, y, button, modifiers):
         """
         Handle clicks within the grid cells and toggles the state of the
         clicked cell
         """
-        # Check if the click is within any grid cell and toggle its state
-        for section, items in self.grid_state.items():
-            start_x, start_y = self.get_grid_start_position(section)
-            for index, item in enumerate(items):
-                cell_x = start_x + 150
-                cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
-                if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
-                    cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
-                    # Toggle the state of the grid cell
-                    self.grid_state[section][item] = self.grid_state[section][item].next()
+        if self.popup_enabled:
+            self.popup_enabled = False
+        else:
+            # Check if the click is within any grid cell and toggle its state
+            for section, items in self.grid_state.items():
+                start_x, start_y = self.get_grid_start_position(section)
+                for index, item in enumerate(items):
+                    cell_x = start_x + 150
+                    cell_y = start_y - 30 - index * (GRID_CELL_SIZE + GRID_MARGIN) + 10
+                    if (cell_x - GRID_CELL_SIZE / 2 < x < cell_x + GRID_CELL_SIZE / 2 and
+                        cell_y - GRID_CELL_SIZE / 2 < y < cell_y + GRID_CELL_SIZE / 2):
+                        # Toggle the state of the grid cell
+                        self.grid_state[section][item] = self.grid_state[section][item].next()
 
     def get_grid_start_position(self, section):
         """
@@ -224,85 +271,65 @@ class Notesheet(arcade.View):
             return 550, SCREEN_HEIGHT - 50
 
     def on_suggest_click(self, event):
-        """
-        Handle the click event for suggestions
-
-        PLACEHOLDER
-        """
-        suspect = None
-        weapon = None
-        room = None
-        valid_guess = True
-        for section, items in self.grid_state.items():
-            for card, value in items.items():
-                if value.name == 'SUGGEST':
-                    if section == 'Suspects':
-                        if suspect is None:
-                            suspect = card
-                        else:
-                            valid_guess = False
-                    elif section == 'Weapons':
-                        if weapon is None:
-                            weapon = card
-                        else:
-                            valid_guess = False
-                    else:
-                        if room is None:
-                            room = card
-                        else:
-                            valid_guess = False
-        if suspect is None or weapon is None or room is None:
-            valid_guess = False
-        if valid_guess:
-            print(f'Suggestion: {suspect} in the {room} with the {weapon}')
+        self.validate_guess('SUGGEST')
 
 
     def on_accuse_click(self, event):
-        """
-        Handle the click event for accusations
+        self.validate_guess('ACCUSE')
 
-        PLACEHOLDER
-        """
-        suspect = None
-        weapon = None
-        room = None
+    def on_other_turn_click(self, event):
+        self.popup_enabled = True
+        self.popup_text.text = "It's not your turn\n(Click to continue)"
+
+    def validate_guess(self, method):
+        guess = ['Suspects', 'Weapons', 'Rooms']
         valid_guess = True
         for section, items in self.grid_state.items():
             for card, value in items.items():
-                if value.name == 'ACCUSE':
-                    if section == 'Suspects':
-                        if suspect is None:
-                            suspect = card
-                        else:
-                            valid_guess = False
-                    elif section == 'Weapons':
-                        if weapon is None:
-                            weapon = card
-                        else:
-                            valid_guess = False
+                if value.name == method:
+                    if section in guess:
+                        guess[guess.index(section)] = card
                     else:
-                        if room is None:
-                            room = card
-                        else:
-                            valid_guess = False
-        if suspect is None or weapon is None or room is None:
+                        valid_guess = False
+                        self.popup_text.text = f"Too many {section.lower()} selected\n(Click to continue)"
+        if 'Suspects' in guess or 'Weapons' in guess or 'Rooms' in guess:
             valid_guess = False
+            self.popup_text.text = f"Didn't select one item from each category\n(Click to continue)"
+        if method == 'SUGGEST' and guess[2] != self.player_room:
+            valid_guess = False
+            self.popup_text.text = f"Not in the room you're suggesting\n(Click to continue)"
+        if method == 'ACCUSE' and self.player_room != 'Lobby':
+            valid_guess = False
+            self.popup_text.text = f"Not in the Lobby for an accusation\n(Click to continue)"
         if valid_guess:
-            print(f'Accusation: {suspect} in the {room} with the {weapon}')
+            self.window.suspect = guess[0]
+            self.window.weapon = guess[1]
+            self.window.room = guess[2]
+            if method == 'SUGGEST':
+                self.window.guess_method = 0
+            elif method == 'ACCUSE':
+                self.window.guess_method = 1
+            if self.game_view:
+                # Save the notes
+                self.save_notes()
+                self.manager.disable()
+                self.window.show_view(self.game_view)
+        else:
+            self.popup_enabled = True
 
     def on_return_click(self, event):
         """
         Handle the return button click to save notes and go back 
         to the game view.
         """
-        #Disable the entire UI manager
-        self.manager.disable()
         
+        # Disable the entire UI manager
+        self.manager.disable()
         if self.game_view:
             # Save the notes
             self.save_notes()
+            self.manager.disable()
             self.window.show_view(self.game_view)
-
 
     def save_notes(self):
         """
@@ -333,4 +360,8 @@ class Notesheet(arcade.View):
                 
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
+
+
+
+
 
