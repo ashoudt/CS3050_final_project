@@ -42,8 +42,20 @@ class GameView(arcade.View):
         self.ai_turn_completed = False  
 
         # Create the player piece
-        piece_image = "assets/board game pieces/PNG/Pieces (Black)/pieceBlack_border00.png"
-        self.player_piece = Player(piece_image, 0.4, 4, 7,
+        piece_scale = 0.4
+        player_selection = {
+            "Miss Scarlet": ["assets/board game pieces/PNG/Pieces (Red)/pieceRed_border00.png", 23, 16],
+            "Colonel Mustard": ["assets/board game pieces/PNG/Pieces (Yellow)/pieceYellow_border00.png", 16, 23],
+            "Mrs. White": ["assets/board game pieces/PNG/Pieces (White)/pieceWhite_border00.png", 23, 7],
+            "Mr. Green": ["assets/board game pieces/PNG/Pieces (Green)/pieceGreen_border00.png", 6, 23],
+            "Mrs. Peacock": ["assets/board game pieces/PNG/Pieces (Blue)/pieceBlue_border01.png", 5, 0],
+            "Professor Plum": ["assets/board game pieces/PNG/Pieces (Purple)/piecePurple_border00.png", 13, 0]
+        }
+
+        # Get selected players sprite and starting coordinates
+        piece_image, starting_x, starting_y = player_selection[self.window.character_name]
+
+        self.player_piece = Player(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
 
         # Create a die for each player
@@ -376,8 +388,10 @@ class GameView(arcade.View):
         Handle player movement using arrow keys.
         """
         if key == arcade.key.ESCAPE:
+            
             arcade.close_window()
             arcade.exit()
+
         elif key == arcade.key.ENTER:
             self.next_turn()
 
@@ -508,11 +522,105 @@ class InstructionView(arcade.View):
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ Start the game when the mouse is pressed """
-        game_view = GameView()
-        game_view.setup()
+        game_view = PlayerSelectionView()
         self.window.show_view(game_view)
 
 
+class PlayerSelectionView(arcade.View):
+    def __init__(self):
+        super().__init__()
+        self.manager = arcade.gui.UIManager()
+        self.manager.enable()
+
+        # List of character cards with images
+        self.characters = [
+            ("Miss Scarlet", "assets/clue cards/missscarlet.png"),
+            ("Colonel Mustard", "assets/clue cards/colmustard.png"),
+            ("Mrs. White", "assets/clue cards/mrswhite.png"),
+            ("Mr. Green", "assets/clue cards/mrgreen.png"),
+            ("Mrs. Peacock", "assets/clue cards/mrspeacock.png"),
+            ("Professor Plum", "assets/clue cards/profplum.png")
+        ]
+
+        # Track selected character button
+        self.selected_button = None
+
+        # Main vertical box for grid and Next button
+        main_v_box = arcade.gui.UIBoxLayout(vertical=True, space_between=10)
+
+        # Create two horizontal boxes for each row of buttons
+        row1 = arcade.gui.UIBoxLayout(vertical=False, space_between=10)
+        row2 = arcade.gui.UIBoxLayout(vertical=False, space_between=10)
+
+        # Loop through characters and create buttons, then add them to rows
+        for i, (character_name, character_image) in enumerate(self.characters):
+            button = arcade.gui.UITextureButton(
+                texture=arcade.load_texture(character_image),
+                width=200,
+                height=300,
+            )
+            # Attach an event handler with the button and character name
+            button.on_click = lambda event, button=button, name=character_name: self.on_character_select(button, name)
+
+            # Add button to the appropriate row
+            if i < 3:
+                row1.add(button)
+            else:
+                row2.add(button)
+
+        # Add both rows to the main vertical layout
+        main_v_box.add(row1)
+        main_v_box.add(row2)
+
+        # Render buttons
+        self.default_style = {
+            "font_name": ("calibri", "arial"),
+            "font_size": 15,
+            "font_color": arcade.color.WHITE,
+            "border_width": 2,
+            "border_color": None,
+            "bg_color": arcade.color.RASPBERRY,
+        }
+
+        # Create the Next button
+        next_button = arcade.gui.UIFlatButton(text="Next", width=100, style = self.default_style)
+        next_button.on_click = self.on_next_button_click
+        main_v_box.add(next_button)
+
+        # Anchor the main layout to the center of the screen
+        self.manager.add(
+            arcade.gui.UIAnchorWidget(
+                anchor_x="center_x",
+                anchor_y="center_y",
+                child=main_v_box
+            )
+        )
+
+    def on_character_select(self, button, character_name):
+        # Store the selected button for the outline
+        self.selected_button = button
+        self.window.character_name = character_name
+        print(f"Character selected: {character_name}")
+
+    def on_next_button_click(self, event):
+        # Move to game if player selected
+        if self.selected_button != None:
+            game_view = GameView()
+            self.window.show_view(game_view)
+
+
+    def on_draw(self):
+        self.clear()
+        self.manager.draw()
+
+        # Draw a ring around the selected character if any
+        if self.selected_button:
+            x, y = self.selected_button.center_x, self.selected_button.center_y
+            arcade.draw_rectangle_outline(x, y, self.selected_button.width + 10, self.selected_button.height + 10,
+                                          color=arcade.color.YELLOW, border_width=5)
+
+    def on_hide_view(self):
+        self.manager.disable()
 
 class GameOverView(arcade.View):
     """ View to show when game is over """
@@ -523,9 +631,7 @@ class GameOverView(arcade.View):
         self.won = won
         #self.texture = arcade.load_texture("game_over.png")
 
-        # Reset the viewport, necessary if we have a scrolling game and we need
-        # to reset the viewport back to the start so we can see what we draw.
-        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+        arcade.set_viewport(0, self.window.width, 0, self.window.height)
 
         # Create the text for how many spaces remaining
         won_text_x = self.window.width / 2
