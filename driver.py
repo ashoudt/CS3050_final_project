@@ -45,11 +45,11 @@ class GameView(arcade.View):
         piece_scale = 0.4
         player_selection = {
             "Miss Scarlet": ["assets/board game pieces/PNG/Pieces (Red)/pieceRed_border00.png", 23, 16],
-            "Colonel Mustard": ["assets/board game pieces/PNG/Pieces (Yellow)/pieceYellow_border00.png", 16, 23],
+            "Colonel Mustard": ["assets/board game pieces/PNG/Pieces (Yellow)/pieceYellow_border18.png", 16, 23],
             "Mrs. White": ["assets/board game pieces/PNG/Pieces (White)/pieceWhite_border00.png", 23, 7],
             "Mr. Green": ["assets/board game pieces/PNG/Pieces (Green)/pieceGreen_border00.png", 6, 23],
             "Mrs. Peacock": ["assets/board game pieces/PNG/Pieces (Blue)/pieceBlue_border01.png", 5, 0],
-            "Professor Plum": ["assets/board game pieces/PNG/Pieces (Purple)/piecePurple_border00.png", 13, 0]
+            "Professor Plum": ["assets/board game pieces/PNG/Pieces (Purple)/piecePurple_border00.png", 18, 0]
         }
 
         # Get selected players sprite and starting coordinates
@@ -657,8 +657,7 @@ class GameOverView(arcade.View):
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, re-start the game. """
-        game_view = GameView()
-        game_view.setup()
+        game_view = InstructionView()
         self.window.show_view(game_view)
     
 
