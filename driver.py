@@ -3,6 +3,8 @@ from board import Board
 from deck import Deck
 from die import Die
 from notesheet import Notesheet
+from computer import Computer
+import random
 import arcade
 import arcade.gui
 import os
@@ -54,9 +56,30 @@ class GameView(arcade.View):
 
         # Get selected players sprite and starting coordinates
         piece_image, starting_x, starting_y = player_selection[self.window.character_name]
-
         self.player_piece = Player(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
+        del player_selection[self.window.character_name]
+        
+        # Create ai 1
+        ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
+        piece_image, starting_x, starting_y = ai_card_1_info
+        self.ai_1 = Computer(piece_image, piece_scale, starting_x, starting_y,
+                                   self.board_size, self.board_center_x, self.board_center_y)
+        del player_selection[ai_card_1_name]
+
+        # Create ai 2
+        ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
+        piece_image, starting_x, starting_y = ai_card_2_info
+        self.ai_2 = Computer(piece_image, piece_scale, starting_x, starting_y,
+                                   self.board_size, self.board_center_x, self.board_center_y)
+        del player_selection[ai_card_2_name]
+
+        # Create ai 3
+        ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
+        piece_image, starting_x, starting_y = ai_card_3_info
+        self.ai_3 = Computer(piece_image, piece_scale, starting_x, starting_y,
+                                   self.board_size, self.board_center_x, self.board_center_y)
+        del player_selection[ai_card_3_name]
 
         # Create a die for each player
         self.die = Die(1.25)
@@ -121,6 +144,8 @@ class GameView(arcade.View):
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
         self.all_sprites.append(self.player_piece)
+        self.all_sprites.extend([self.ai_1, self.ai_2, self.ai_3])
+
         # Append each die individually to self.all_sprites
         self.all_sprites.append(self.die)
         for player_deck in self.all_decks:
@@ -205,6 +230,8 @@ class GameView(arcade.View):
         )
 
     def on_show_view(self):
+        from GameOverView import GameOverView
+
         self.ui_manager.enable()
         if self.whose_turn[0] == True:
             try:
@@ -478,191 +505,9 @@ class GameView(arcade.View):
         if os.path.exists(save_file):
             os.remove(save_file)
 
-
-class InstructionView(arcade.View):
-
-    def on_show_view(self):
-        # Set the background color and reset the viewport
-        arcade.set_viewport(0, self.window.width, 0, self.window.height)
-
-    def on_draw(self):
-        """ Draw the instruction screen """
-        self.clear()
-
-        # Title
-        arcade.draw_text("Instructions", self.window.width / 2, self.window.height - 60,
-                         arcade.color.WHITE, font_size=40, anchor_x="center")
-
-        # Instructions text
-        instructions = [
-            "Objective: Deduce the murderer, weapon, and room of the crime.",
-            "",
-            "Gameplay:",
-            "1. Roll the die to move around the board using your arrow keys.",
-            "2. Enter rooms to make suggestions (murderer, weapon, room).",
-            "3. Other players must disprove your suggestion if possible.",
-            "4. Use clues to narrow down suspects, weapons, and rooms.",
-            "",
-            "Winning:",
-            "When confident, make an accusation. If correct, you win!",
-            "If incorrect, you’re out of the game.",
-            "",
-            "Click anywhere to start the game."
-        ]
-
-        # Draw each line of instructions
-        start_y = self.window.height - 120
-        for i, line in enumerate(instructions):
-            arcade.draw_text(line, self.window.width / 2, start_y - i * 25,
-                             arcade.color.LIGHT_GRAY, font_size=16, anchor_x="center")
-
-        # Footer
-        arcade.draw_text("Click to start", self.window.width / 2, 30,
-                         arcade.color.WHITE, font_size=18, anchor_x="center")
-
-    def on_mouse_press(self, _x, _y, _button, _modifiers):
-        """ Start the game when the mouse is pressed """
-        game_view = PlayerSelectionView()
-        self.window.show_view(game_view)
-
-
-class PlayerSelectionView(arcade.View):
-    def __init__(self):
-        super().__init__()
-        self.manager = arcade.gui.UIManager()
-        self.manager.enable()
-
-        # List of character cards with images
-        self.characters = [
-            ("Miss Scarlet", "assets/clue cards/missscarlet.png"),
-            ("Colonel Mustard", "assets/clue cards/colonelmustard.png"),
-            ("Mrs. White", "assets/clue cards/mrswhite.png"),
-            ("Mr. Green", "assets/clue cards/mrgreen.png"),
-            ("Mrs. Peacock", "assets/clue cards/mrspeacock.png"),
-            ("Professor Plum", "assets/clue cards/professorplum.png")
-        ]
-
-        # Track selected character button
-        self.selected_button = None
-
-        # Main vertical box for grid and Next button
-        main_v_box = arcade.gui.UIBoxLayout(vertical=True, space_between=10)
-
-        # Create two horizontal boxes for each row of buttons
-        row1 = arcade.gui.UIBoxLayout(vertical=False, space_between=10)
-        row2 = arcade.gui.UIBoxLayout(vertical=False, space_between=10)
-
-        # Loop through characters and create buttons, then add them to rows
-        for i, (character_name, character_image) in enumerate(self.characters):
-            button = arcade.gui.UITextureButton(
-                texture=arcade.load_texture(character_image),
-                width=200,
-                height=300,
-            )
-            # Attach an event handler with the button and character name
-            button.on_click = lambda event, button=button, name=character_name: self.on_character_select(button, name)
-
-            # Add button to the appropriate row
-            if i < 3:
-                row1.add(button)
-            else:
-                row2.add(button)
-
-        # Add both rows to the main vertical layout
-        main_v_box.add(row1)
-        main_v_box.add(row2)
-
-        # Render buttons
-        self.default_style = {
-            "font_name": ("calibri", "arial"),
-            "font_size": 15,
-            "font_color": arcade.color.WHITE,
-            "border_width": 2,
-            "border_color": None,
-            "bg_color": arcade.color.RASPBERRY,
-        }
-
-        # Create the Next button
-        next_button = arcade.gui.UIFlatButton(text="Next", width=100, style = self.default_style)
-        next_button.on_click = self.on_next_button_click
-        main_v_box.add(next_button)
-
-        # Anchor the main layout to the center of the screen
-        self.manager.add(
-            arcade.gui.UIAnchorWidget(
-                anchor_x="center_x",
-                anchor_y="center_y",
-                child=main_v_box
-            )
-        )
-
-    def on_character_select(self, button, character_name):
-        # Store the selected button for the outline
-        self.selected_button = button
-        self.window.character_name = character_name
-        print(f"Character selected: {character_name}")
-
-    def on_next_button_click(self, event):
-        # Move to game if player selected
-        if self.selected_button != None:
-            game_view = GameView()
-            self.window.show_view(game_view)
-
-
-    def on_draw(self):
-        self.clear()
-        self.manager.draw()
-
-        # Draw a ring around the selected character if any
-        if self.selected_button:
-            x, y = self.selected_button.center_x, self.selected_button.center_y
-            arcade.draw_rectangle_outline(x, y, self.selected_button.width + 10, self.selected_button.height + 10,
-                                          color=arcade.color.YELLOW, border_width=5)
-
-    def on_hide_view(self):
-        self.manager.disable()
-
-class GameOverView(arcade.View):
-    """ View to show when game is over """
-
-    def __init__(self, won):
-        """ This is run once when we switch to this view """
-        super().__init__()
-        self.won = won
-        #self.texture = arcade.load_texture("game_over.png")
-
-        arcade.set_viewport(0, self.window.width, 0, self.window.height)
-
-        # Create the text for how many spaces remaining
-        won_text_x = self.window.width / 2
-        won_text_y = self.window.height / 2
-        self.won_text = arcade.Text(
-            "Congratulations! You won!",
-            won_text_x,
-            won_text_y,
-            arcade.color.WHITE,
-            font_size=40,
-            anchor_x="center"
-        )
-        if not won:
-            self.won_text.text = "Sorry, you lost."
-
-    def on_draw(self):
-        """ Draw this view """
-        self.clear()
-        # TODO: Add text to screen, maybe background overlaid
-        self.won_text.draw()
-        arcade.draw_text("Click to advance", self.window.width / 2, self.window.height / 2-75,
-                         arcade.color.WHITE, font_size=20, anchor_x="center")
-
-    def on_mouse_press(self, _x, _y, _button, _modifiers):
-        """ If the user presses the mouse button, re-start the game. """
-        game_view = InstructionView()
-        self.window.show_view(game_view)
-    
-
 def main():
     """ Main function """
+    from InstructionView import InstructionView
 
     window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     start_view = InstructionView()
