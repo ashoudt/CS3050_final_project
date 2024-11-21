@@ -56,28 +56,28 @@ class GameView(arcade.View):
 
         # Get selected players sprite and starting coordinates
         piece_image, starting_x, starting_y = player_selection[self.window.character_name]
-        self.player_piece = Player(piece_image, piece_scale, starting_x, starting_y,
+        self.player_piece = Player(piece_image, self.window.character_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.window.character_name]
         
         # Create ai 1
         ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_1_info
-        self.ai_1 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_1 = Computer(piece_image, ai_card_1_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[ai_card_1_name]
 
         # Create ai 2
         ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_2_info
-        self.ai_2 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_2 = Computer(piece_image, ai_card_2_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[ai_card_2_name]
 
         # Create ai 3
         ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_3_info
-        self.ai_3 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_3 = Computer(piece_image, ai_card_3_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[ai_card_3_name]
 
@@ -426,19 +426,19 @@ class GameView(arcade.View):
             last_row = self.player_piece.row
             last_col = self.player_piece.column
             if key == arcade.key.UP:
-                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.DOWN:
-                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.LEFT:
-                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             elif key == arcade.key.RIGHT:
-                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
             if self.spaces_remaining == 0:

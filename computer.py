@@ -5,7 +5,7 @@ ROW_COUNT = 24
 COLUMN_COUNT = 24
 
 class Computer(arcade.Sprite):
-    def __init__(self, piece_image, scale, start_row, start_column, board_size, board_center_x, board_center_y):
+    def __init__(self, piece_image, character_name, scale, start_row, start_column, board_size, board_center_x, board_center_y):
         """
         Initialize the player piece.
         """
@@ -14,6 +14,8 @@ class Computer(arcade.Sprite):
         self.board_size = board_size
         self.board_center_x = board_center_x
         self.board_center_y = board_center_y
+
+        self.character_name = character_name
 
         # Initial position
         self.row = start_row
@@ -39,10 +41,16 @@ class Computer(arcade.Sprite):
         self.center_y = board_bottom_left_y + (cell_height * self.row) + (cell_height / 2)
 
     
-    def move(self, d_row, d_column, rooms, doors, key):
+    def move(self, d_row, d_column, rooms, doors, player_locations, key):
         """Move the player by a row or column delta, but check room boundaries and door access."""
         new_row = self.row + d_row
         new_column = self.column + d_column
+
+        # Check for collisions with other players
+        for player_name, location in player_locations.items():
+            if player_name != self.character_name and location == [new_row, new_column]:
+                print(f"Collision detected with {player_name} at ({new_row}, {new_column})")
+                return  # Stop movement due to collision
 
         # Set opposites for leaving a room
         opposites = {"UP": "DOWN", 

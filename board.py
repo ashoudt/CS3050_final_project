@@ -89,3 +89,12 @@ class Board():
             Door((6,19), "DOWN"), Door((4,16), "LEFT"), Door((7,14), "DOWN"), Door((7,9), "DOWN"), 
             Door((4,7), "RIGHT"), Door((16,11), "DOWN")
         ]
+
+        self.player_locations =  {
+            "Miss Scarlet": [23, 16],
+            "Colonel Mustard": [16, 23],
+            "Mrs. White": [23, 7],
+            "Mr. Green": [6, 23],
+            "Mrs. Peacock": [5, 0],
+            "Professor Plum": [18, 0]
+        }
