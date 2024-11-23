@@ -269,6 +269,7 @@ class GameView(arcade.View):
                         self.window.show_view(game_over_view)
             except AttributeError:
                 pass
+        
 
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
@@ -323,6 +324,17 @@ class GameView(arcade.View):
                 self.roll_disabled = True  
                 self.die.roll()
                 self.spaces_remaining = self.die.value
+
+                
+                start = (0, 0)  # Example start
+                goal = (23, 23)  # Example goal
+
+                path = self.board.a_star(start, goal)
+                if path:
+                    print("Path found:", path)
+                else:
+                    print("No path found!")
+
                 print(f"AI Player 1 rolled a {self.spaces_remaining}")
 
         # AI Player 2   

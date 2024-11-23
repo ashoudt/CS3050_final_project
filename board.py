@@ -1,4 +1,5 @@
 import arcade
+import heapq
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -31,6 +32,7 @@ class Room:
         self.name = name
         self.boundaries = boundaries
         self.accessible = accessible
+    
 
 class Door:
     def __init__(self, boundaries, entry_direction):
@@ -98,3 +100,115 @@ class Board():
             "Mrs. Peacock": [5, 0],
             "Professor Plum": [18, 0]
         }
+    
+    def get_room(self, position):
+        """
+        Check if the given position (row, col) is inside any room.
+        Returns the room name if inside a room, otherwise None.
+        """
+        row, col = position
+        for room in self.rooms:
+            for boundary in room.boundaries:
+                row_start, row_end, col_start, col_end = boundary
+                if row_start <= row <= row_end and col_start <= col <= col_end:
+                    return room.name  # Position is inside this room
+        return None  # Not inside any room
+
+
+    def can_move(self, current, direction):
+        """Check if the player can move from the current position in the specified direction."""
+        row, col = current
+        next_position = {
+            "UP": (row + 1, col),
+            "DOWN": (row - 1, col),
+            "LEFT": (row, col - 1),
+            "RIGHT": (row, col + 1),
+        }.get(direction)
+
+        opposites = {"UP": "DOWN", 
+                     "DOWN": "UP", 
+                     "LEFT": "RIGHT", 
+                     "RIGHT": "LEFT"}
+
+        # Ensure next_position is within the board bounds
+        if not (0 <= next_position[0] < ROW_COUNT and 0 <= next_position[1] < COLUMN_COUNT):
+            return False  # Out of bounds
+
+        # Check if the move is through a door into a room
+        for door in self.doors:
+            if (row, col) == door.boundaries and door.entry_direction == direction:
+                return True  # Move through a door
+            
+        # Check if move is through a door, out of a room
+        for door in self.doors:
+            if (next_position[0], next_position[1]) == door.boundaries and door.entry_direction == opposites[direction]:
+                return True  # Move through a door
+
+        # Check if current and next positions are in the same room
+        current_room = self.get_room(current)
+        next_room = self.get_room(next_position)
+
+        # Valid move within the same room (handles not being in a room)
+        if current_room == next_room:
+            return True  
+
+        return False  # Move is not valid
+
+    
+    def heuristic(self, current, goal):
+        """Calculate the Manhattan distance heuristic."""
+        return abs(current[0] - goal[0]) + abs(current[1] - goal[1])
+
+    def get_neighbors(self, position):
+        """Return accessible neighbors of the given position based on walls."""
+        row, col = position
+        neighbors = []
+
+        directions = {
+            "UP": (row + 1, col),
+            "DOWN": (row - 1, col),
+            "LEFT": (row, col - 1),
+            "RIGHT": (row, col + 1),
+        }
+
+        for direction, (r, c) in directions.items():
+            # Ensure within bounds and no rooms block movement
+            if 0 <= r < ROW_COUNT and 0 <= c < COLUMN_COUNT and self.can_move(position, direction):
+                neighbors.append((r, c))
+
+        return neighbors
+
+    def a_star(self, start, goal):
+        """Find the shortest path from start to goal using A*."""
+        open_list = []
+        heapq.heappush(open_list, (0, start))  # (f_cost, position)
+
+        came_from = {}  # To reconstruct path
+        g_score = {start: 0}
+        f_score = {start: self.heuristic(start, goal)}
+
+        while open_list:
+            _, current = heapq.heappop(open_list)
+
+            if current == goal:
+                return self.reconstruct_path(came_from, current)
+
+            for neighbor in self.get_neighbors(current):
+                tentative_g_score = g_score[current] + 1  # Cost to move to neighbor (one tile)
+
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
+                    heapq.heappush(open_list, (f_score[neighbor], neighbor))
+
+        return None  # No path found
+
+    def reconstruct_path(self, came_from, current):
+        """Reconstruct the path from start to goal."""
+        path = [current]
+        while current in came_from:
+            current = came_from[current]
+            path.append(current)
+        path.reverse()
+        return path
