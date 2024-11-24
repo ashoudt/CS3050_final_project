@@ -4,6 +4,7 @@ from deck import Deck
 from die import Die
 from notesheet import Notesheet
 from computer import Computer
+import time
 import random
 import arcade
 import arcade.gui
@@ -322,18 +323,36 @@ class GameView(arcade.View):
             if self.spaces_remaining == 0:
                 self.roll_disabled = True  
                 self.die.roll()
-                self.spaces_remaining = self.die.value
+                self.ai_1.spaces_remaining = self.die.value
+
+                print(f"{self.ai_1.character_name} rolled a {self.ai_1.spaces_remaining}")
                 
-                start = (5, 1)  # Example start
-                goal = (5, 3)  # Example goal
+                start = (self.ai_1.row, self.ai_1.column)  # Example start
+                goal = (9, 11)  # Example goal
 
                 path = self.board.a_star(start, goal)
                 if path:
                     print("Path found:", path)
-                else:
-                    print("No path found!")
 
-                print(f"AI Player 1 rolled a {self.spaces_remaining}")
+                start_in_a_room =  self.ai_1.within_a_room(self.board.rooms)
+
+                if start_in_a_room:
+                    while self.ai_1.within_a_room(self.board.doors):
+                        self.ai_1.move(path[0])
+                        path = path[1:]
+                        self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
+
+                self.ai_1.move(path[0])
+                path = path[1:]
+                self.ai_1.spaces_remaining
+                self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
+
+                while self.ai_1.spaces_remaining:
+                    self.ai_1.move(path[0])
+                    path = path[1:]
+                    self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
+                    self.ai_1.spaces_remaining -= 1
+
                 self.ai_turn_completed = True
 
         # AI Player 2   
@@ -341,8 +360,33 @@ class GameView(arcade.View):
             if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
-                self.spaces_remaining = self.die.value
-                print(f"AI Player 2 rolled a {self.spaces_remaining}")
+                self.ai_2.spaces_remaining = self.die.value
+                print(f"{self.ai_2.character_name} rolled a {self.ai_2.spaces_remaining}")
+
+                start = (self.ai_2.row, self.ai_2.column)  # Example start
+                goal = (9, 11)  # Example goal
+
+                path = self.board.a_star(start, goal)
+                if path:
+                    print("Path found:", path)
+
+                start_in_a_room =  self.ai_2.within_a_room(self.board.rooms)
+
+                if start_in_a_room:
+                    while self.ai_2.within_a_room(self.board.doors):
+                        self.ai_2.move(path[0])
+                        path = path[1:]
+                        self.board.player_locations[self.ai_2.character_name] = [self.ai_2.row, self.ai_2.column]
+
+                self.ai_2.move(path[0])
+                path = path[1:]
+                self.board.player_locations[self.ai_2.character_name] = [self.ai_2.row, self.ai_2.column]
+
+                while self.ai_2.spaces_remaining:
+                    self.ai_2.move(path[0])
+                    path = path[1:]
+                    self.ai_2.spaces_remaining -= 1
+
                 self.ai_turn_completed = True
 
         # AI Player 3
@@ -350,8 +394,32 @@ class GameView(arcade.View):
             if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
-                self.spaces_remaining = self.die.value
-                print(f"AI Player 3 rolled a {self.spaces_remaining}")
+                self.ai_3.spaces_remaining = self.die.value
+                print(f"{self.ai_3.character_name} rolled a {self.ai_3.spaces_remaining}")
+
+                start = (self.ai_3.row, self.ai_3.column)  # Example start
+                goal = (9, 11)  # Example goal
+
+                path = self.board.a_star(start, goal)
+                if path:
+                    print("Path found:", path)
+
+                start_in_a_room =  self.ai_3.within_a_room(self.board.rooms)
+
+                if start_in_a_room:
+                    while self.ai_3.within_a_room(self.board.doors):
+                        self.ai_3.move(path[0])
+                        path = path[1:]
+
+                self.ai_3.move(path[0])
+                path = path[1:]
+                self.board.player_locations[self.ai_3.character_name] = [self.ai_3.row, self.ai_3.column]
+
+                while self.ai_3.spaces_remaining:
+                    self.ai_3.move(path[0])
+                    path = path[1:]
+                    self.ai_3.spaces_remaining -= 1
+
                 self.ai_turn_completed = True
 
 
@@ -468,12 +536,18 @@ class GameView(arcade.View):
                 self.refute_card = None
             self.whose_turn[0] = False
             self.whose_turn[1] = True
+
+        # AI 1 turn
         elif self.whose_turn[1]:
             self.whose_turn[1] = False
             self.whose_turn[2] = True
+
+        # AI 2 turn
         elif self.whose_turn[2]:
             self.whose_turn[2] = False
             self.whose_turn[3] = True
+
+        # AI 3 turn
         elif self.whose_turn[3]:
             self.whose_turn[3] = False
             self.whose_turn[0] = True
@@ -499,7 +573,7 @@ class GameView(arcade.View):
 
         # Automatically handle AI players' rolls if it's not the user's turn
         if not self.whose_turn[0]: 
-            self.roll_die_for_current_player()
+            #self.roll_die_for_current_player()
             
             # If the AI has rolled, proceed to the next turn
             if self.ai_turn_completed:

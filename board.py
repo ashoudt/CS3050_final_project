@@ -71,7 +71,7 @@ class Board():
             Room("Study", [(20, 22, 0, 6), (23, 23, 0, 5)], True),
             Room("Hall", [(17, 22, 9, 14), (23, 23, 10, 13)], True),
             Room("Lounge", [(18, 23, 17, 23)], True),
-            Room("Dining Room", [(9, 14, 16, 23), (8, 8, 20, 23)], True),
+            Room("Dining Room", [(9, 14, 16, 23), (8, 8, 19, 23)], True),
             Room("Kitchen", [(0, 4, 18, 23), (5, 5, 18, 22)], True),
             Room("Ball Room", [(1, 6, 8, 15), (0, 0, 10, 13)], True),
             Room("Lobby", [(9, 15, 9, 13)], True),
