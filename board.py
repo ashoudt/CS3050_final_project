@@ -115,7 +115,7 @@ class Board():
         return None  # Not inside any room
 
 
-    def can_move(self, current, direction):
+    def can_move(self, current, direction, start, goal):
         """Check if the player can move from the current position in the specified direction."""
         row, col = current
         next_position = {
@@ -129,28 +129,37 @@ class Board():
                      "DOWN": "UP", 
                      "LEFT": "RIGHT", 
                      "RIGHT": "LEFT"}
+        
+        # Get names of all coordinate rooms
+        current_room = self.get_room(current)
+        next_room = self.get_room(next_position)
+        start_room = self.get_room(start)
+        goal_room = self.get_room(goal)
 
         # Ensure next_position is within the board bounds
         if not (0 <= next_position[0] < ROW_COUNT and 0 <= next_position[1] < COLUMN_COUNT):
             return False  # Out of bounds
+        
+        # Check for user collision
+        for value in self.player_locations.values():
+            #_, coordinate = player.items()
+
+            if value == list(next_position):
+                return False
 
         # Check if the move is through a door into a room
         for door in self.doors:
-            if (row, col) == door.boundaries and door.entry_direction == direction:
+            if (row, col) == door.boundaries and door.entry_direction == direction and next_room == goal_room:
                 return True  # Move through a door
             
         # Check if move is through a door, out of a room
         for door in self.doors:
             if (next_position[0], next_position[1]) == door.boundaries and door.entry_direction == opposites[direction]:
                 return True  # Move through a door
-
-        # Check if current and next positions are in the same room
-        current_room = self.get_room(current)
-        next_room = self.get_room(next_position)
-
-        # Valid move within the same room (handles not being in a room)
-        if current_room == next_room:
-            return True  
+        
+        # Allow movement within a room if it is within a start,goal, or not a room 
+        if current_room == next_room and (next_room == start_room or next_room == goal_room or next_room == None):
+            return True
 
         return False  # Move is not valid
 
@@ -159,7 +168,7 @@ class Board():
         """Calculate the Manhattan distance heuristic."""
         return abs(current[0] - goal[0]) + abs(current[1] - goal[1])
 
-    def get_neighbors(self, position):
+    def get_neighbors(self, position, start, goal):
         """Return accessible neighbors of the given position based on walls."""
         row, col = position
         neighbors = []
@@ -173,7 +182,7 @@ class Board():
 
         for direction, (r, c) in directions.items():
             # Ensure within bounds and no rooms block movement
-            if 0 <= r < ROW_COUNT and 0 <= c < COLUMN_COUNT and self.can_move(position, direction):
+            if 0 <= r < ROW_COUNT and 0 <= c < COLUMN_COUNT and self.can_move(position, direction, start, goal):
                 neighbors.append((r, c))
 
         return neighbors
@@ -193,7 +202,7 @@ class Board():
             if current == goal:
                 return self.reconstruct_path(came_from, current)
 
-            for neighbor in self.get_neighbors(current):
+            for neighbor in self.get_neighbors(current, start, goal):
                 tentative_g_score = g_score[current] + 1  # Cost to move to neighbor (one tile)
 
                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:

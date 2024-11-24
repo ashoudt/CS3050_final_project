@@ -40,8 +40,7 @@ class GameView(arcade.View):
         self.background_texture = self.board.background_texture
 
         # Keep track of whose turn it currently is
-        self.whose_turn = [True, False, False, False]
-        self.ai_turn_completed = False  
+        self.whose_turn = [True, False, False, False] # User, AI1, AI2, AI3
 
         # Create the player piece
         piece_scale = 0.4
@@ -320,14 +319,13 @@ class GameView(arcade.View):
 
         # AI Player 1
         elif current_player_index == 1:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
+            if self.spaces_remaining == 0:
                 self.roll_disabled = True  
                 self.die.roll()
                 self.spaces_remaining = self.die.value
-
                 
-                start = (0, 0)  # Example start
-                goal = (23, 23)  # Example goal
+                start = (5, 1)  # Example start
+                goal = (5, 3)  # Example goal
 
                 path = self.board.a_star(start, goal)
                 if path:
@@ -336,22 +334,25 @@ class GameView(arcade.View):
                     print("No path found!")
 
                 print(f"AI Player 1 rolled a {self.spaces_remaining}")
+                self.ai_turn_completed = True
 
         # AI Player 2   
         elif current_player_index == 2:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
+            if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
                 self.spaces_remaining = self.die.value
                 print(f"AI Player 2 rolled a {self.spaces_remaining}")
+                self.ai_turn_completed = True
 
         # AI Player 3
         elif current_player_index == 3:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
+            if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
                 self.spaces_remaining = self.die.value
                 print(f"AI Player 3 rolled a {self.spaces_remaining}")
+                self.ai_turn_completed = True
 
 
     def on_click_notesheet(self, event):
@@ -457,6 +458,7 @@ class GameView(arcade.View):
                 self.next_turn()
 
     def next_turn(self):
+
         if self.whose_turn[0]:
             self.spaces_remaining = 0
             self.show_no_help = False
