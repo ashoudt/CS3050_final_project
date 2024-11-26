@@ -14,6 +14,7 @@ TEXT_AREA_HEIGHT = 200
 
 # File to save/load notes
 SAVE_FILE = "notesheet_state.json"
+AI_SAVE_FILE = "ai_notesheet_state.json"
 
 # Initialize list of names for suspects, weapons, and rooms
 SUSPECTS = ["Miss Scarlet", "Colonel Mustard", "Mrs. White", "Mr. Green", "Mrs. Peacock", "Professor Plum"]
@@ -83,9 +84,30 @@ class Notesheet(arcade.View):
             "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
             "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
         }
+
+        # TODO: AI notesheet (need for all three!!)
+        self.ai_grid_state_1 = {
+            "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
+            "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
+            "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
+        }
+        self.ai_grid_state_2 = {
+            "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
+            "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
+            "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
+        }
+        self.ai_grid_state_3 = {
+            "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
+            "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
+            "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
+        }
+        print("DEFINING AI Notesheet!!!!")
+        print(self.ai_grid_state_1)
+        print()
+
         self.input_notes = "" # Store text area content
         self.setup()
-        self.load_notes() # Load notes on initialization
+        # self.load_notes() # Load notes on initialization
 
     def setup(self):
         """
@@ -273,7 +295,6 @@ class Notesheet(arcade.View):
     def on_suggest_click(self, event):
         self.validate_guess('SUGGEST')
 
-
     def on_accuse_click(self, event):
         self.validate_guess('ACCUSE')
 
@@ -344,9 +365,21 @@ class Notesheet(arcade.View):
             "custom_notes": self.custom_notes
         }
 
+        # TODO: add all ais here? (then find vals based on # after grid_state??)
+        ai_notes_data = {
+            "grid_state_1": self.ai_grid_state_1,
+            "grid_state_2": self.ai_grid_state_2,
+            "grid_state_3": self.ai_grid_state_3
+        }
+
         # Write to the JSON file
         with open(SAVE_FILE, "w") as f:
             json.dump(notes_data, f, cls=EnumEncoder)
+
+        # TODO: Write to AI JSON file (use for loop w/ diff lines for multiple ai dicts)
+        print("saving to file...")
+        with open(AI_SAVE_FILE, "w") as f2:
+            json.dump(ai_notes_data, f2, cls=EnumEncoder)
 
     def load_notes(self):
         """
@@ -361,7 +394,121 @@ class Notesheet(arcade.View):
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
 
+        # TODO: Do the same thing for the AI note sheets (use for loop for diff ais??)
+        if os.path.exists(AI_SAVE_FILE):
+            with open(AI_SAVE_FILE, "r") as f2:
+                notes_data = json.load(f2, object_hook=as_enum)
+                self.ai_grid_state_1 = notes_data.get("grid_state_1", self.ai_grid_state_1)
+                self.ai_grid_state_2 = notes_data.get("grid_state_2", self.ai_grid_state_2)
+                self.ai_grid_state_3 = notes_data.get("grid_state_3", self.ai_grid_state_3)
 
+    # TODO: When initializing ai cards mark the cards in the AI's notesheet (+ create notesheet)
+    def set_ai_cards(self, deck1, deck2, deck3):
+        print("\n1")
+        for card in deck1:
+            print(card.value)
+            self.ai_grid_state_1[card.card_type][card.value] = self.ai_grid_state_1[card.card_type][card.value].MARKED
+        print("\n2")
+        for card in deck2:
+            print(card.value)
+            self.ai_grid_state_2[card.card_type][card.value] = self.ai_grid_state_2[card.card_type][card.value].MARKED
+        print("\n3")
+        for card in deck3:
+            print(card.value)
+            self.ai_grid_state_3[card.card_type][card.value] = self.ai_grid_state_3[card.card_type][card.value].MARKED
 
+    # TODO: DELETE THESE 2 funcs??
+    def update_players_turn(self, player_turn):
+        """
+        Say whether it's the player's turn, called when note sheet is opened
+        """
+        self.players_turn = player_turn
 
+    def update_player_room(self, player_room):
+        """
+        Update the room the player is in, called when note sheet is opened
+        """
+        self.player_room = player_room
 
+    def update_notesheet(self, player_turn, player_room):
+        """
+        Update the player's current room, current turn, and load the json file
+        """
+        self.players_turn = player_turn
+        self.player_room = player_room
+        self.load_notes()
+
+    def get_ai_notesheet(self, ai_num):
+        """
+        Return specified AI note sheet data
+        """
+        if ai_num == 1:
+            return self.ai_grid_state_1
+        elif ai_num == 2:
+            return self.ai_grid_state_2
+        elif ai_num == 3:
+            return self.ai_grid_state_3
+        else:
+            print("can't return ai note sheet because ai num isn't valid (1-3)")
+
+    def update_refute_card(self, refute_card, ai_num):
+        """
+        When an AI's guess is refuted, update it here
+        """
+        if ai_num == 1:
+            self.ai_grid_state_1[refute_card.card_type][refute_card.value] = \
+                self.ai_grid_state_1[refute_card.card_type][refute_card.value].MARKED
+        elif ai_num == 2:
+            self.ai_grid_state_2[refute_card.card_type][refute_card.value] = \
+                self.ai_grid_state_2[refute_card.card_type][refute_card.value].MARKED
+        elif ai_num == 3:
+            print(f"refute card: {refute_card.value}")
+            self.ai_grid_state_3[refute_card.card_type][refute_card.value] = \
+                self.ai_grid_state_3[refute_card.card_type][refute_card.value].MARKED
+        else:
+            print("can't update ai note sheet because ai num isn't valid (1-3)")
+        self.save_notes()
+
+    def update_accusation(self, accuse_cards, ai_num):
+        """
+        When an AI's made an un-refuted guess, mark those cards as ACCUSE
+        """
+        # TODO: Remove print
+        print("update accuse")
+        print(accuse_cards)
+        if ai_num == 1:
+            self.ai_grid_state_1["Suspects"][accuse_cards[0]] = \
+                self.ai_grid_state_1["Suspects"][accuse_cards[0]].ACCUSE
+            self.ai_grid_state_1["Rooms"][accuse_cards[1]] = \
+                self.ai_grid_state_1["Rooms"][accuse_cards[1]].ACCUSE
+            self.ai_grid_state_1["Weapons"][accuse_cards[2]] = \
+                self.ai_grid_state_1["Weapons"][accuse_cards[2]].ACCUSE
+        elif ai_num == 2:
+            self.ai_grid_state_2["Suspects"][accuse_cards[0]] = \
+                self.ai_grid_state_2["Suspects"][accuse_cards[0]].ACCUSE
+            self.ai_grid_state_2["Rooms"][accuse_cards[1]] = \
+                self.ai_grid_state_2["Rooms"][accuse_cards[1]].ACCUSE
+            self.ai_grid_state_2["Weapons"][accuse_cards[2]] = \
+                self.ai_grid_state_2["Weapons"][accuse_cards[2]].ACCUSE
+        elif ai_num == 3:
+            self.ai_grid_state_3["Suspects"][accuse_cards[0]] = \
+                self.ai_grid_state_3["Suspects"][accuse_cards[0]].ACCUSE
+            self.ai_grid_state_3["Rooms"][accuse_cards[1]] = \
+                self.ai_grid_state_3["Rooms"][accuse_cards[1]].ACCUSE
+            self.ai_grid_state_3["Weapons"][accuse_cards[2]] = \
+                self.ai_grid_state_3["Weapons"][accuse_cards[2]].ACCUSE
+        else:
+            print("can't set accusation cards because ai num isn't valid (1-3)")
+        self.save_notes()
+
+    def show_ai_suggestion(self, guess):
+        """
+        Create a pop-up showing the user the AI's guess
+        """
+        self.manager.disable()
+        arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
+                                        250, 100, arcade.color.BLACK)
+        self.popup_text.text = f"Suggestion: {guess[0]} in the {guess[1]} with the {guess[2]}\n(Click to continue)"
+        self.popup_text.draw()
+        self.popup_enabled = True
+        # self.validate_guess("SUGGEST")

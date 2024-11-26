@@ -41,7 +41,7 @@ class GameView(arcade.View):
 
         # Keep track of whose turn it currently is
         self.whose_turn = [True, False, False, False]
-        self.ai_turn_completed = False  
+        self.ai_turn_completed = False
 
         # Create the player piece
         piece_scale = 0.4
@@ -84,7 +84,7 @@ class GameView(arcade.View):
         # Create a die for each player
         self.die = Die(1.25)
         self.spaces_remaining = 0
-        
+
         # Create the deck and deal out the cards
         self.deck = Deck()
         self.num_players = 4
@@ -96,6 +96,10 @@ class GameView(arcade.View):
         self.card_padding_from_board = 20
         self.card_padding_from_cards = 20
         self.card_padding_from_edge = 20
+
+        self.ai_1_accuse_cards = []
+        self.ai_2_accuse_cards = []
+        self.ai_3_accuse_cards = []
 
         # Position cards on the screen
         for deck in self.all_decks:
@@ -140,6 +144,28 @@ class GameView(arcade.View):
                 elif deck == self.all_decks[5]:
                     card.position = (horizontal_pos + card.card_width // 2,
                                      SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 4 * card.card_height - 4 * self.card_padding_from_cards)
+
+        # TODO: Create the note sheet
+        self.notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
+
+        # TODO: Call before showing window?? (currently only updates when a button in notesheet is pressed)
+        # and could we potentially have issues if the player DOESN'T click the notesheet before ai's turn???
+        # TODO: call notesheet function to update starter cards (for loop for mult, only do once)
+        self.notesheet_view.set_ai_cards(self.all_decks[1], self.all_decks[2], self.all_decks[3])
+        # if self.first_turn:
+        #     print("first!")
+        #     self.notesheet_view.set_ai_cards(self.all_decks[1], self.all_decks[2], self.all_decks[3])
+        #     self.first_turn = False
+
+        # TODO: Delete the ai's old note sheet if it exists
+        print("-----------delete old file")
+        ai_save_file = "ai_notesheet_state.json"
+        if os.path.exists(ai_save_file):
+            print("deleted??")
+            os.remove(ai_save_file)
+
+        # Save new AI note sheet file
+        self.notesheet_view.save_notes()
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
@@ -289,12 +315,6 @@ class GameView(arcade.View):
         self.all_sprites.remove(card)
         self.all_sprites.append(card)
 
-        # TODO: check that sleep works once the game loop is implemented
-        # time.sleep(10)
-
-        # wait 10 seconds, then flip the card back over
-        # card.face_down()
-
         # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
         # self.flip_refute_card(refute_card)
 
@@ -341,17 +361,22 @@ class GameView(arcade.View):
                 self.spaces_remaining = self.die.value
                 print(f"AI Player 3 rolled a {self.spaces_remaining}")
 
-
     def on_click_notesheet(self, event):
         """
         Switch to Notesheet view when button is clicked.
         """
+
+        # TODO: Updated to have 1 initial definition of notesheet rather tham redefining
         self.ui_manager.disable()
         if self.refute_card:
-            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), False)
+            # notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), False)
+            # self.notesheet_view.update_players_turn(False)
+            # self.notesheet_view.update_player_room(self.player_piece.get_room(self.board.rooms))
+            self.notesheet_view.update_notesheet(False, self.player_piece.get_room(self.board.rooms))
         else:
-            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
-        self.window.show_view(notesheet_view)
+            # notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
+            self.notesheet_view.update_notesheet(self.whose_turn[0], self.player_piece.get_room(self.board.rooms))
+        self.window.show_view(self.notesheet_view)
 
     def on_draw(self):
         """
@@ -415,7 +440,6 @@ class GameView(arcade.View):
         Handle player movement using arrow keys.
         """
         if key == arcade.key.ESCAPE:
-            
             arcade.close_window()
             arcade.exit()
 
@@ -481,12 +505,91 @@ class GameView(arcade.View):
         """
         Update animations and handle AI rolls.
         """
+        from GameOverView import GameOverView
+
         self.die.update_animation()
 
         # Automatically handle AI players' rolls if it's not the user's turn
-        if not self.whose_turn[0]: 
+        if not self.whose_turn[0]:
             self.roll_die_for_current_player()
-            
+
+            # Once the AI rolled have them suggest/accuse if they are in a room
+            current_player_index = self.whose_turn.index(True)
+
+            # Have AI's make a suggestion, or accuse if they're ready (and able) to
+            if current_player_index == 1:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_1.ready_to_accuse:
+                    print("AI 1 makes an accusation!")
+                    print(self.ai_1_accuse_cards)
+
+                    # End the game if an AI makes an accusation (they will always be right)
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    # Make a suggestion, show the user the suggestion, and then refute it
+                    ai_guessed_cards = self.ai_1.make_ai_suggestion(1)
+                    self.notesheet_view.show_ai_suggestion(ai_guessed_cards)
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[1])
+
+                    # Update AI's note sheet if someone refuted their suggestion, otherwise tell
+                    # them to go and make an accusation
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 1)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 1)
+                        self.ai_1_accuse_cards = ai_guessed_cards
+                        self.ai_1.ready_to_accuse = True
+
+                self.ai_turn_completed = True
+            elif current_player_index == 2:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_2.ready_to_accuse:
+                    print("AI 2 makes an accusation!")
+                    print(self.ai_2_accuse_cards)
+
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    ai_guessed_cards = self.ai_2.make_ai_suggestion(2)
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[2])
+
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 2)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 2)
+                        self.ai_2_accuse_cards = ai_guessed_cards
+                        self.ai_2.ready_to_accuse = True
+
+                self.ai_turn_completed = True
+            elif current_player_index == 3:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_3.ready_to_accuse:
+                    print("AI 3 makes an accusation!")
+                    print(self.ai_3_accuse_cards)
+
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    ai_guessed_cards = self.ai_3.make_ai_suggestion(3)
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[3])
+
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 3)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 3)
+                        self.ai_3_accuse_cards = ai_guessed_cards
+                        self.ai_3.ready_to_accuse = True
+                self.ai_turn_completed = True
+            else:
+                print("invalid ai index, cannot play their turn")
+
             # If the AI has rolled, proceed to the next turn
             if self.ai_turn_completed:
                 self.next_turn()
@@ -497,13 +600,17 @@ class GameView(arcade.View):
         Reset the notesheet on window close
         """
         save_file = "notesheet_state.json"
+        ai_save_file = "ai_notesheet_state.json"
 
         # Disable the UI manager and delete the save file
         self.ui_manager.disable()
 
+        # TODO: delete ai file as well!! (PROBLEM: This func ISN'T getting called)
         # Delete the notesheet save file to reset the state
         if os.path.exists(save_file):
             os.remove(save_file)
+        if os.path.exists(ai_save_file):
+            os.remove(ai_save_file)
 
 def main():
     """ Main function """

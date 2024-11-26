@@ -38,7 +38,6 @@ class Player(arcade.Sprite):
         self.center_x = board_bottom_left_x + (cell_width * self.column) + (cell_width / 2)
         self.center_y = board_bottom_left_y + (cell_height * self.row) + (cell_height / 2)
 
-    
     def move(self, d_row, d_column, rooms, doors, key):
         """Move the player by a row or column delta, but check room boundaries and door access."""
         new_row = self.row + d_row
@@ -78,7 +77,6 @@ class Player(arcade.Sprite):
                     break
             print(f"IN ROOM ROW: {self.row}, COL: {self.column}\n")
             return
-        
 
         # Free movement within the same space (either inside a room or outside)
         if current_in_room == new_in_room and current_room == new_room:
