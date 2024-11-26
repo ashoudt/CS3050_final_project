@@ -101,8 +101,6 @@ class Deck:
         for card in self.all_decks[0]:
             card.face_up()
 
-        # TODO: Assign decks to NPCs and Player
-
         # Print cards in each deck (for testing purposes)
         #print("KILLER\n****")
         #for card in self.killer_cards:
@@ -144,7 +142,7 @@ class Deck:
             for card in deck:
                 # If card is in ANY deck (including the AI's), then return it
                 if card.value in guessed_cards:
-                    print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
+                    # print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
                     return True, card
 
         # The card wasn't found

@@ -359,13 +359,12 @@ class Notesheet(arcade.View):
         # Update custom notes from the text area
         self.custom_notes = self.text_area.text
 
-        # Create a dictionary for saving
+        # Create dictionaries for saving
         notes_data = {
             "grid_state": self.grid_state,
             "custom_notes": self.custom_notes
         }
 
-        # TODO: add all ais here? (then find vals based on # after grid_state??)
         ai_notes_data = {
             "grid_state_1": self.ai_grid_state_1,
             "grid_state_2": self.ai_grid_state_2,
@@ -376,8 +375,7 @@ class Notesheet(arcade.View):
         with open(SAVE_FILE, "w") as f:
             json.dump(notes_data, f, cls=EnumEncoder)
 
-        # TODO: Write to AI JSON file (use for loop w/ diff lines for multiple ai dicts)
-        print("saving to file...")
+        # Write to the AI JSON file
         with open(AI_SAVE_FILE, "w") as f2:
             json.dump(ai_notes_data, f2, cls=EnumEncoder)
 
@@ -394,7 +392,7 @@ class Notesheet(arcade.View):
                 # Set the loaded notes in the text area
                 self.text_area.text = self.custom_notes
 
-        # TODO: Do the same thing for the AI note sheets (use for loop for diff ais??)
+        # Do the same thing for the AI note sheets
         if os.path.exists(AI_SAVE_FILE):
             with open(AI_SAVE_FILE, "r") as f2:
                 notes_data = json.load(f2, object_hook=as_enum)
@@ -402,7 +400,7 @@ class Notesheet(arcade.View):
                 self.ai_grid_state_2 = notes_data.get("grid_state_2", self.ai_grid_state_2)
                 self.ai_grid_state_3 = notes_data.get("grid_state_3", self.ai_grid_state_3)
 
-    # TODO: When initializing ai cards mark the cards in the AI's notesheet (+ create notesheet)
+    # When initializing ai cards mark the cards in the AI's notesheet (+ create notesheet)
     def set_ai_cards(self, deck1, deck2, deck3):
         print("\n1")
         for card in deck1:
@@ -416,19 +414,6 @@ class Notesheet(arcade.View):
         for card in deck3:
             print(card.value)
             self.ai_grid_state_3[card.card_type][card.value] = self.ai_grid_state_3[card.card_type][card.value].MARKED
-
-    # TODO: DELETE THESE 2 funcs??
-    def update_players_turn(self, player_turn):
-        """
-        Say whether it's the player's turn, called when note sheet is opened
-        """
-        self.players_turn = player_turn
-
-    def update_player_room(self, player_room):
-        """
-        Update the room the player is in, called when note sheet is opened
-        """
-        self.player_room = player_room
 
     def update_notesheet(self, player_turn, player_room):
         """
@@ -473,9 +458,6 @@ class Notesheet(arcade.View):
         """
         When an AI's made an un-refuted guess, mark those cards as ACCUSE
         """
-        # TODO: Remove print
-        print("update accuse")
-        print(accuse_cards)
         if ai_num == 1:
             self.ai_grid_state_1["Suspects"][accuse_cards[0]] = \
                 self.ai_grid_state_1["Suspects"][accuse_cards[0]].ACCUSE

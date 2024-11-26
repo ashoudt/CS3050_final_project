@@ -127,25 +127,22 @@ class Computer(arcade.Sprite):
                     return room.name
         return "N/A"
 
-    # TODO: Create function for AI to GUESS weapon and person (get_room for room, CALL FROM DRIVER)
     def make_ai_suggestion(self, curr_ai):
         # Make sure the AI is within a room AND set that room to their suggestion
         current_room = self.get_room(self.board.rooms)
 
-        # TODO: need to confirm that validating a room works once AI movement is implemented
+        # TODO: need to fully implement validating a room once AI movement is implemented (uncomment below)
         # If AI is not currently in a room, then don't make a guess
         # if current_room == "N/A":
         #     print("ai not in a room, can't make a guess")
         #     return "Not in a room, can't make a guess"
-
-        self.room_guess = current_room
+        # self.room_guess = current_room
 
         # Look at all the AI's non-marked (blank) suspects and weapons and randomly
         # choose one to guess (set state == suggest)
         # Re-read the .JSON file everytime we make a guess, update notesheet accordingly
         self.ai_notesheet.load_notes()
         current_grid_state = self.ai_notesheet.get_ai_notesheet(curr_ai)
-        # print(current_grid_state["Suspects"])
 
         # TODO: delete this once validating a room works
         possible_rooms = ["Conservatory"]
@@ -163,10 +160,7 @@ class Computer(arcade.Sprite):
 
         for suspect in current_grid_state["Suspects"]:
             suspect_state = current_grid_state["Suspects"][suspect]
-            # print(suspect_state)
-            # print(current_grid_state["Suspects"][suspect])
             if str(suspect_state) == "NotesheetBox.BLANK":
-                # self.suspect_guess = suspect
                 possible_suspects.append(suspect)
 
         for weapon in current_grid_state["Weapons"]:
@@ -181,9 +175,5 @@ class Computer(arcade.Sprite):
         self.weapon_guess = possible_weapons[0]
 
         # Make the suggestion and return those cards (so driver can call deck functions)
-        print(f"Suggestion: {self.suspect_guess} in the {self.room_guess} with the {self.weapon_guess}")
+        # print(f"Suggestion: {self.suspect_guess} in the {self.room_guess} with the {self.weapon_guess}")
         return self.suspect_guess, self.room_guess, self.weapon_guess
-
-    # TODO: Create function for AI to ACCUSE (once they have made a guess that isn't refuted)
-    # Also need to get the AI to move towards the middle area once they know they can accuse
-    # def make_ai_accusation(self, curr_ai):
