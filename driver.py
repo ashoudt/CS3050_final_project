@@ -546,8 +546,6 @@ class GameView(arcade.View):
         self.spaces_remaining = 0 
         # Reset AI turn state
         self.ai_turn_completed = False
-        # Handle dice roll for the next player
-        self.roll_die_for_current_player()  
 
     def update_spaces_left(self, last_row, last_col):
         if not self.player_piece.within_a_room(self.board.rooms):
@@ -574,20 +572,21 @@ class GameView(arcade.View):
 
             # Have AI's make a suggestion, or accuse if they're ready (and able) to
             if current_player_index == 1:
-                # TODO: modify if statement to only allow accusation while in middle room
-                if self.ai_1.ready_to_accuse:
+                current_room = self.ai_1.get_room(self.board.rooms)
+                # only allow accusation while in middle room
+                if self.ai_1.ready_to_accuse and current_room == "Lobby":
                     print(f"{self.ai_card_1_name} makes an accusation!")
                     print(self.ai_1_accuse_cards)
 
                     # End the game if an AI makes an accusation (they will always be right)
                     game_over_view = GameOverView(False)
                     self.window.show_view(game_over_view)
-                # TODO: modify this to only make a suggestion if AI is in a room
-                else:
+
+                # make a suggestion if AI is in a room
+                elif self.ai_1.within_a_room(self.board.rooms):
                     # Make a suggestion, show the user the suggestion, and then refute it
                     ai_guessed_cards = self.ai_1.make_ai_suggestion(1)
 
-                    # self.notesheet_view.show_ai_suggestion(ai_guessed_cards)
                     self.popup_text.text = f"{self.ai_card_1_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
 
@@ -598,22 +597,23 @@ class GameView(arcade.View):
                     if refuted:
                         self.notesheet_view.update_refute_card(refute_card, 1)
                     else:
-                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        # tell the AI to go to the middle room to make an accusation
+                        self.ai_1.goal(16, 11, "Lobby")
                         self.notesheet_view.update_accusation(ai_guessed_cards, 1)
                         self.ai_1_accuse_cards = ai_guessed_cards
                         self.ai_1.ready_to_accuse = True
 
                 self.ai_turn_completed = True
             elif current_player_index == 2:
-                # TODO: modify if statement to only allow accusation while in middle room
-                if self.ai_2.ready_to_accuse:
+                current_room = self.ai_2.get_room(self.board.rooms)
+                if self.ai_2.ready_to_accuse and current_room == "Lobby":
                     print(f"{self.ai_card_2_name} makes an accusation!")
                     print(self.ai_2_accuse_cards)
 
                     game_over_view = GameOverView(False)
                     self.window.show_view(game_over_view)
-                # TODO: modify this to only make a suggestion if AI is in a room
-                else:
+
+                elif self.ai_2.within_a_room(self.board.rooms):
                     ai_guessed_cards = self.ai_2.make_ai_suggestion(2)
                     self.popup_text.text = f"{self.ai_card_2_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
@@ -622,22 +622,21 @@ class GameView(arcade.View):
                     if refuted:
                         self.notesheet_view.update_refute_card(refute_card, 2)
                     else:
-                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.ai_2.goal(16, 11, "Lobby")
                         self.notesheet_view.update_accusation(ai_guessed_cards, 2)
                         self.ai_2_accuse_cards = ai_guessed_cards
                         self.ai_2.ready_to_accuse = True
-
+                        
                 self.ai_turn_completed = True
             elif current_player_index == 3:
-                # TODO: modify if statement to only allow accusation while in middle room
-                if self.ai_3.ready_to_accuse:
+                current_room = self.ai_3.get_room(self.board.rooms)
+                if self.ai_3.ready_to_accuse and current_room == "Lobby":
                     print(f"{self.ai_card_3_name} makes an accusation!")
                     print(self.ai_3_accuse_cards)
 
                     game_over_view = GameOverView(False)
                     self.window.show_view(game_over_view)
-                # TODO: modify this to only make a suggestion if AI is in a room
-                else:
+                elif self.ai_3.within_a_room(self.board.rooms):
                     ai_guessed_cards = self.ai_3.make_ai_suggestion(3)
                     self.popup_text.text = f"{self.ai_card_3_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
@@ -646,7 +645,7 @@ class GameView(arcade.View):
                     if refuted:
                         self.notesheet_view.update_refute_card(refute_card, 3)
                     else:
-                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.ai_3.goal(16, 11, "Lobby")
                         self.notesheet_view.update_accusation(ai_guessed_cards, 3)
                         self.ai_3_accuse_cards = ai_guessed_cards
                         self.ai_3.ready_to_accuse = True

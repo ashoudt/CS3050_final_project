@@ -113,26 +113,18 @@ class Computer(arcade.Sprite):
 
         # TODO: need to fully implement validating a room once AI movement is implemented (uncomment below)
         # If AI is not currently in a room, then don't make a guess
-        # if current_room == "N/A":
-        #     print("ai not in a room, can't make a guess")
-        #     return "Not in a room, can't make a guess"
-        # self.room_guess = current_room
+        if current_room == "N/A":
+            print("AI not in a room, can't make a guess")
+            return None
+        
+        # Set the room guess to the current room
+        self.room_guess = current_room
 
         # Look at all the AI's non-marked (blank) suspects and weapons and randomly
         # choose one to guess (set state == suggest)
         # Re-read the .JSON file everytime we make a guess, update notesheet accordingly
         self.ai_notesheet.load_notes()
         current_grid_state = self.ai_notesheet.get_ai_notesheet(curr_ai)
-
-        # TODO: delete this once validating a room works
-        possible_rooms = ["Conservatory"]
-        for room in current_grid_state["Rooms"]:
-            suspect_state = current_grid_state["Rooms"][room]
-            if str(suspect_state) == "NotesheetBox.BLANK":
-                possible_rooms.append(room)
-        random.shuffle(possible_rooms)
-        self.room_guess = possible_rooms[0]
-        # TODO: end of section to delete
 
         # Have default values in case there are no more new values to guess of a category
         possible_suspects = ["Mr. Green"]
