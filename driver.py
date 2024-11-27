@@ -318,110 +318,58 @@ class GameView(arcade.View):
             # Enable roll button 
             self.roll_disabled = False
 
-        # AI Player 1
-        elif current_player_index == 1:
-            if self.spaces_remaining == 0:
-                self.roll_disabled = True  
-                self.die.roll()
-                self.ai_1.spaces_remaining = self.die.value
+        # AI Players
+        else:
+            current_ai = [self.ai_1, self.ai_2, self.ai_3][current_player_index - 1]
 
-                print(f"{self.ai_1.character_name} rolled a {self.ai_1.spaces_remaining}")
-                
-                start = (self.ai_1.row, self.ai_1.column)  # Example start
-                goal = (9, 11)  # Example goal
-
-                path = self.board.a_star(start, goal)
-                if path:
-                    print("Path found:", path)
-
-                start_in_a_room =  self.ai_1.within_a_room(self.board.rooms)
-
-                if start_in_a_room:
-                    while self.ai_1.within_a_room(self.board.doors):
-                        self.ai_1.move(path[0])
-                        path = path[1:]
-                        self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
-
-                self.ai_1.move(path[0])
-                path = path[1:]
-                self.ai_1.spaces_remaining
-                self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
-
-                while self.ai_1.spaces_remaining:
-                    self.ai_1.move(path[0])
-                    path = path[1:]
-                    self.board.player_locations[self.ai_1.character_name] = [self.ai_1.row, self.ai_1.column]
-                    self.ai_1.spaces_remaining -= 1
-
-                self.ai_turn_completed = True
-
-        # AI Player 2   
-        elif current_player_index == 2:
             if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
-                self.ai_2.spaces_remaining = self.die.value
-                print(f"{self.ai_2.character_name} rolled a {self.ai_2.spaces_remaining}")
+                current_ai.spaces_remaining = self.die.value
 
-                start = (self.ai_2.row, self.ai_2.column)  # Example start
-                goal = (9, 11)  # Example goal
+                print(f"{current_ai.character_name} rolled a {current_ai.spaces_remaining}")
 
-                path = self.board.a_star(start, goal)
+                # if no goal or the goal is reached, select a new goal
+                if current_ai.goal is None or current_ai.has_reached_goal(self.board):
+                    # select a new random goal room
+                    goal_row, goal_col, goal_room = self.board.get_random_goal()
+                    current_ai.goal = (goal_row, goal_col, goal_room)
+                    print(f"{current_ai.character_name} selected a new goal: {goal_room} at ({goal_row}, {goal_col})")
+                    
+                # use the existing goal
+                goal_row, goal_col, goal_room = current_ai.goal
+                print(f"{current_ai.character_name} is heading to {goal_room} at ({goal_row}, {goal_col})")
+               
+                # calculate path using A* algorithm
+                start = (current_ai.row, current_ai.column)
+                path = self.board.a_star(start, (goal_row, goal_col))
                 if path:
-                    print("Path found:", path)
+                    print(f"Path found for {current_ai.character_name}: {path}")
 
-                start_in_a_room =  self.ai_2.within_a_room(self.board.rooms)
+                # move the AI along the path
+                while current_ai.spaces_remaining > 0 and path:
+                    next_step = path.pop(0)
+                    current_ai.move(next_step)
+                    current_ai.spaces_remaining -= 1
+                    self.board.player_locations[current_ai.character_name] = [current_ai.row, current_ai.column]
 
-                if start_in_a_room:
-                    while self.ai_2.within_a_room(self.board.doors):
-                        self.ai_2.move(path[0])
-                        path = path[1:]
-                        self.board.player_locations[self.ai_2.character_name] = [self.ai_2.row, self.ai_2.column]
+                    # check if AI is at the door
+                    if (current_ai.row, current_ai.column) == (goal_row, goal_col):
+                        # find the door and determine the room entry position
+                        for door in self.board.doors:
+                            if door.boundaries == (goal_row, goal_col):
+                                room_entry = door.get_room_entry_position()
+                                print(f"{current_ai.character_name} is entering {goal_room} at {room_entry}")
+                                current_ai.move(room_entry)  # move into the room
+                                current_ai.spaces_remaining = 0  # stop further movement
+                                break
 
-                self.ai_2.move(path[0])
-                path = path[1:]
-                self.board.player_locations[self.ai_2.character_name] = [self.ai_2.row, self.ai_2.column]
-
-                while self.ai_2.spaces_remaining:
-                    self.ai_2.move(path[0])
-                    path = path[1:]
-                    self.ai_2.spaces_remaining -= 1
+                # if the AI has reached its goal, clear the goal
+                if current_ai.has_reached_goal(self.board):
+                    print(f"{current_ai.character_name} has entered {goal_room}.")
+                    current_ai.goal = None
 
                 self.ai_turn_completed = True
-
-        # AI Player 3
-        elif current_player_index == 3:
-            if self.spaces_remaining == 0:
-                self.roll_disabled = True
-                self.die.roll()
-                self.ai_3.spaces_remaining = self.die.value
-                print(f"{self.ai_3.character_name} rolled a {self.ai_3.spaces_remaining}")
-
-                start = (self.ai_3.row, self.ai_3.column)  # Example start
-                goal = (9, 11)  # Example goal
-
-                path = self.board.a_star(start, goal)
-                if path:
-                    print("Path found:", path)
-
-                start_in_a_room =  self.ai_3.within_a_room(self.board.rooms)
-
-                if start_in_a_room:
-                    while self.ai_3.within_a_room(self.board.doors):
-                        self.ai_3.move(path[0])
-                        path = path[1:]
-
-                self.ai_3.move(path[0])
-                path = path[1:]
-                self.board.player_locations[self.ai_3.character_name] = [self.ai_3.row, self.ai_3.column]
-
-                while self.ai_3.spaces_remaining:
-                    self.ai_3.move(path[0])
-                    path = path[1:]
-                    self.ai_3.spaces_remaining -= 1
-
-                self.ai_turn_completed = True
-
 
     def on_click_notesheet(self, event):
         """

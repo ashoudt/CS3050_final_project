@@ -1,5 +1,6 @@
 import arcade
 import heapq
+import random
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -35,14 +36,28 @@ class Room:
     
 
 class Door:
-    def __init__(self, boundaries, entry_direction):
+    def __init__(self, boundaries, entry_direction, room_name):
         """
-        Create a door with a row, col, and direction of entry
+        Create a door with a row, col, direction of entry, and associated room
         Boundaries are in format (row, col)
         """
         self.boundaries = boundaries
         self.entry_direction = entry_direction
+        self.room_name = room_name
 
+    def get_room_entry_position(self):
+        """
+        Calculate the position inside the room based on the entry direction.
+        """
+        row, col = self.boundaries
+        if self.entry_direction == "UP":
+            return row + 1, col
+        elif self.entry_direction == "DOWN":
+            return row - 1, col
+        elif self.entry_direction == "LEFT":
+            return row, col - 1
+        elif self.entry_direction == "RIGHT":
+            return row, col + 1
 
 class Board():
     def __init__(self):
@@ -85,11 +100,24 @@ class Board():
 
         # Define doors for the rooms
         self.doors = [
-            Door((4, 5), "LEFT"), Door((12, 1), "DOWN"), Door((8, 6), "LEFT"), Door((12, 3), "UP"),
-            Door((15,7), "LEFT"), Door((19,6), "UP"), Door((19,8), "RIGHT"), Door((16,11), "UP"), 
-            Door((16,12), "UP"), Door((17,17), "UP"), Door((15,17), "DOWN"), Door((11,15), "RIGHT"), 
-            Door((6,19), "DOWN"), Door((4,16), "LEFT"), Door((7,14), "DOWN"), Door((7,9), "DOWN"), 
-            Door((4,7), "RIGHT"), Door((16,11), "DOWN")
+            Door((4, 5), "LEFT", "Conservatory"), 
+            Door((12, 1), "DOWN", "Billiard Room"), 
+            Door((8, 6), "LEFT", "Billiard Room"), 
+            Door((12, 3), "UP", "Library"),
+            Door((15,7), "LEFT", "Library"), 
+            Door((19,6), "UP", "Study"), 
+            Door((19,8), "RIGHT", "Hall"), 
+            Door((16,11), "UP", "Hall"), 
+            Door((16,12), "UP", "Hall"), 
+            Door((17,17), "UP", "Lounge"), 
+            Door((15,17), "DOWN", "Dining Room"), 
+            Door((11,15), "RIGHT", "Dining Room"), 
+            Door((6,19), "DOWN", "Kitchen"), 
+            Door((4,16), "LEFT", "Ball Room"), 
+            Door((7,14), "DOWN", "Ball Room"), 
+            Door((7,9), "DOWN", "Ball Room"), 
+            Door((4,7), "RIGHT", "Ball Room"), 
+            Door((16,11), "DOWN", "Lobby")
         ]
 
         self.player_locations =  {
@@ -157,7 +185,7 @@ class Board():
             if (next_position[0], next_position[1]) == door.boundaries and door.entry_direction == opposites[direction]:
                 return True  # Move through a door
         
-        # Allow movement within a room if it is within a start,goal, or not a room 
+        # Allow movement within a room if it is within a start, goal, or not a room 
         if current_room == next_room and (next_room == start_room or next_room == goal_room or next_room == None):
             return True
 
@@ -221,3 +249,21 @@ class Board():
             path.append(current)
         path.reverse()
         return path
+    
+    def get_random_goal(self):
+        """
+        Select a random accessible room as a goal and return an entry point
+        """
+        # filter rooms that are accessible
+        accessible_rooms = [room for room in self.rooms if room.accessible]
+            
+        # select a random accessible room
+        selected_room = random.choice(accessible_rooms)
+
+        # find doors associated with the selected room
+        room_doors = [door for door in self.doors if door.room_name == selected_room.name]
+
+        # select a random door for the room
+        selected_door = random.choice(room_doors)
+
+        return selected_door.boundaries[0], selected_door.boundaries[1], selected_room.name

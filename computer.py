@@ -20,6 +20,9 @@ class Computer(arcade.Sprite):
         # Initial position
         self.row = start_row
         self.column = start_column
+
+        # Current goal (row, col, room_name)
+        self.goal = None
         
         self.spaces_remaining = 0
 
@@ -55,4 +58,27 @@ class Computer(arcade.Sprite):
             for row_start, row_end, col_start, col_end in room.boundaries:
                 if row_start <= self.row <= row_end and col_start <= self.column <= col_end:
                     return True
+        return False
+    
+    def has_reached_goal(self, board):
+        """
+        Check if the AI has reached its goal, either by being at the door or inside the room
+        """
+        # return false is no goal is set
+        if self.goal is None:
+            return False
+        
+        # initialize goal components
+        goal_row, goal_col, goal_room = self.goal
+
+        # check if AI is at the door
+        if self.row == goal_row and self.column == goal_col:
+            return True
+
+        # check if AI is inside the room
+        current_room = board.get_room((self.row, self.column))
+        if current_room == goal_room:
+            return True
+        
+        # goal has not been reached
         return False
