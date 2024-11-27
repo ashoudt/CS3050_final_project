@@ -61,25 +61,25 @@ class GameView(arcade.View):
         del player_selection[self.window.character_name]
         
         # Create ai 1
-        ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
+        self.ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_1_info
         self.ai_1 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_1_name]
+        del player_selection[self.ai_card_1_name]
 
         # Create ai 2
-        ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
+        self.ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_2_info
         self.ai_2 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_2_name]
+        del player_selection[self.ai_card_2_name]
 
         # Create ai 3
-        ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
+        self.ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_3_info
         self.ai_3 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_3_name]
+        del player_selection[self.ai_card_3_name]
 
         # Create a die for each player
         self.die = Die(1.25)
@@ -539,7 +539,7 @@ class GameView(arcade.View):
             if current_player_index == 1:
                 # TODO: modify if statement to only allow accusation while in middle room
                 if self.ai_1.ready_to_accuse:
-                    print("AI 1 makes an accusation!")
+                    print(f"{self.ai_card_1_name} makes an accusation!")
                     print(self.ai_1_accuse_cards)
 
                     # End the game if an AI makes an accusation (they will always be right)
@@ -551,7 +551,7 @@ class GameView(arcade.View):
                     ai_guessed_cards = self.ai_1.make_ai_suggestion(1)
 
                     # self.notesheet_view.show_ai_suggestion(ai_guessed_cards)
-                    self.popup_text.text = f"CPU 1 Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_text.text = f"{self.ai_card_1_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
 
                     refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[1])
@@ -570,7 +570,7 @@ class GameView(arcade.View):
             elif current_player_index == 2:
                 # TODO: modify if statement to only allow accusation while in middle room
                 if self.ai_2.ready_to_accuse:
-                    print("AI 2 makes an accusation!")
+                    print(f"{self.ai_card_2_name} makes an accusation!")
                     print(self.ai_2_accuse_cards)
 
                     game_over_view = GameOverView(False)
@@ -578,7 +578,7 @@ class GameView(arcade.View):
                 # TODO: modify this to only make a suggestion if AI is in a room
                 else:
                     ai_guessed_cards = self.ai_2.make_ai_suggestion(2)
-                    self.popup_text.text = f"CPU 2 Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_text.text = f"{self.ai_card_2_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
                     refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[2])
 
@@ -594,7 +594,7 @@ class GameView(arcade.View):
             elif current_player_index == 3:
                 # TODO: modify if statement to only allow accusation while in middle room
                 if self.ai_3.ready_to_accuse:
-                    print("AI 3 makes an accusation!")
+                    print(f"{self.ai_card_3_name} makes an accusation!")
                     print(self.ai_3_accuse_cards)
 
                     game_over_view = GameOverView(False)
@@ -602,7 +602,7 @@ class GameView(arcade.View):
                 # TODO: modify this to only make a suggestion if AI is in a room
                 else:
                     ai_guessed_cards = self.ai_3.make_ai_suggestion(3)
-                    self.popup_text.text = f"CPU 3 Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_text.text = f"{self.ai_card_3_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
                     self.popup_enabled = True
                     refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[3])
 
