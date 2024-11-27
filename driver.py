@@ -4,6 +4,7 @@ from deck import Deck
 from die import Die
 from notesheet import Notesheet
 from computer import Computer
+import time
 import random
 import arcade
 import arcade.gui
@@ -40,8 +41,9 @@ class GameView(arcade.View):
         self.background_texture = self.board.background_texture
 
         # Keep track of whose turn it currently is
-        self.whose_turn = [True, False, False, False]
+        self.whose_turn = [True, False, False, False] # User, AI1, AI2, AI3
         self.ai_turn_completed = False
+
 
         # Create the player piece
         piece_scale = 0.4
@@ -56,28 +58,28 @@ class GameView(arcade.View):
 
         # Get selected players sprite and starting coordinates
         piece_image, starting_x, starting_y = player_selection[self.window.character_name]
-        self.player_piece = Player(piece_image, piece_scale, starting_x, starting_y,
+        self.player_piece = Player(piece_image, self.window.character_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.window.character_name]
         
         # Create ai 1
         self.ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_1_info
-        self.ai_1 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_1 = Computer(piece_image, ai_card_1_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_1_name]
 
         # Create ai 2
         self.ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_2_info
-        self.ai_2 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_2 = Computer(piece_image, ai_card_2_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_2_name]
 
         # Create ai 3
         self.ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_3_info
-        self.ai_3 = Computer(piece_image, piece_scale, starting_x, starting_y,
+        self.ai_3 = Computer(piece_image, ai_card_3_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_3_name]
 
@@ -302,6 +304,7 @@ class GameView(arcade.View):
                         self.window.show_view(game_over_view)
             except AttributeError:
                 pass
+        
 
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
@@ -348,29 +351,56 @@ class GameView(arcade.View):
             # Enable roll button 
             self.roll_disabled = False
 
-        # AI Player 1
-        elif current_player_index == 1:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
-                self.roll_disabled = True  
-                self.die.roll()
-                self.spaces_remaining = self.die.value
-                print(f"AI Player 1 rolled a {self.spaces_remaining}")
+        # AI Players
+        else:
+            current_ai = [self.ai_1, self.ai_2, self.ai_3][current_player_index - 1]
 
-        # AI Player 2   
-        elif current_player_index == 2:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
+            if self.spaces_remaining == 0:
                 self.roll_disabled = True
                 self.die.roll()
-                self.spaces_remaining = self.die.value
-                print(f"AI Player 2 rolled a {self.spaces_remaining}")
+                current_ai.spaces_remaining = self.die.value
 
-        # AI Player 3
-        elif current_player_index == 3:
-            if not self.ai_turn_completed and self.spaces_remaining == 0:
-                self.roll_disabled = True
-                self.die.roll()
-                self.spaces_remaining = self.die.value
-                print(f"AI Player 3 rolled a {self.spaces_remaining}")
+                print(f"{current_ai.character_name} rolled a {current_ai.spaces_remaining}")
+
+                # if no goal or the goal is reached, select a new goal
+                if current_ai.goal is None or current_ai.has_reached_goal(self.board):
+                    # select a new random goal room
+                    goal_row, goal_col, goal_room = self.board.get_random_goal()
+                    current_ai.goal = (goal_row, goal_col, goal_room)
+                    print(f"{current_ai.character_name} selected a new goal: {goal_room} at ({goal_row}, {goal_col})")
+                    
+                # use the existing goal
+                goal_row, goal_col, goal_room = current_ai.goal
+                print(f"{current_ai.character_name} is heading to {goal_room} at ({goal_row}, {goal_col})")
+               
+                # calculate path using A* algorithm
+                start = (current_ai.row, current_ai.column)
+                path = self.board.a_star(start, (goal_row, goal_col))
+                if path:
+                    print(f"Path found for {current_ai.character_name}: {path}")
+
+                # move the AI along the path
+                while current_ai.spaces_remaining > 0 and path:
+                    next_step = path.pop(0)
+                    current_ai.move(next_step)
+                    current_ai.spaces_remaining -= 1
+                    self.board.player_locations[current_ai.character_name] = [current_ai.row, current_ai.column]
+
+                    # check if AI is at the door
+                    if (current_ai.row, current_ai.column) == (goal_row, goal_col):
+                        # find the door and determine the room entry position
+                        for door in self.board.doors:
+                            if door.boundaries == (goal_row, goal_col):
+                                room_entry = door.get_room_entry_position()
+                                print(f"{current_ai.character_name} is entering {goal_room} at {room_entry}")
+                                current_ai.move(room_entry)  # move into the room
+                                current_ai.spaces_remaining = 0  # stop further movement
+                                break
+
+                # if the AI has reached its goal, clear the goal
+                if current_ai.has_reached_goal(self.board):
+                    print(f"{current_ai.character_name} has entered {goal_room}.")
+                    current_ai.goal = None
 
     def on_click_notesheet(self, event):
         """
@@ -464,25 +494,26 @@ class GameView(arcade.View):
             last_row = self.player_piece.row
             last_col = self.player_piece.column
             if key == arcade.key.UP:
-                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(1, 0, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.DOWN:
-                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.LEFT:
-                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(0, -1, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.RIGHT:
-                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
+                self.player_piece.move(0, 1, self.board.rooms, self.board.doors, self.board.player_locations, key)
                 self.update_spaces_left(last_row, last_col)
                 self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             if self.player_spaces_remaining == 0:
                 self.next_turn()
 
     def next_turn(self):
+
         if self.whose_turn[0]:
             self.player_spaces_remaining = 0
             self.spaces_remaining = 0
@@ -493,12 +524,18 @@ class GameView(arcade.View):
                 self.refute_card = None
             self.whose_turn[0] = False
             self.whose_turn[1] = True
+
+        # AI 1 turn
         elif self.whose_turn[1]:
             self.whose_turn[1] = False
             self.whose_turn[2] = True
+
+        # AI 2 turn
         elif self.whose_turn[2]:
             self.whose_turn[2] = False
             self.whose_turn[3] = True
+
+        # AI 3 turn
         elif self.whose_turn[3]:
             self.whose_turn[3] = False
             self.whose_turn[0] = True
@@ -526,7 +563,7 @@ class GameView(arcade.View):
 
         self.die.update_animation()
 
-        # Automatically handle AI players' rolls if it's not the user's turn
+        # Automatically handle AI players' rolls if it's not the user's turn     
         if self.popup_enabled:
             pass
         elif not self.whose_turn[0]:

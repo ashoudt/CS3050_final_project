@@ -1,4 +1,6 @@
 import arcade
+import heapq
+import random
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -31,16 +33,31 @@ class Room:
         self.name = name
         self.boundaries = boundaries
         self.accessible = accessible
+    
 
 class Door:
-    def __init__(self, boundaries, entry_direction):
+    def __init__(self, boundaries, entry_direction, room_name):
         """
-        Create a door with a row, col, and direction of entry
+        Create a door with a row, col, direction of entry, and associated room
         Boundaries are in format (row, col)
         """
         self.boundaries = boundaries
         self.entry_direction = entry_direction
+        self.room_name = room_name
 
+    def get_room_entry_position(self):
+        """
+        Calculate the position inside the room based on the entry direction.
+        """
+        row, col = self.boundaries
+        if self.entry_direction == "UP":
+            return row + 1, col
+        elif self.entry_direction == "DOWN":
+            return row - 1, col
+        elif self.entry_direction == "LEFT":
+            return row, col - 1
+        elif self.entry_direction == "RIGHT":
+            return row, col + 1
 
 class Board():
     def __init__(self):
@@ -69,7 +86,7 @@ class Board():
             Room("Study", [(20, 22, 0, 6), (23, 23, 0, 5)], True),
             Room("Hall", [(17, 22, 9, 14), (23, 23, 10, 13)], True),
             Room("Lounge", [(18, 23, 17, 23)], True),
-            Room("Dining Room", [(9, 14, 16, 23), (8, 8, 20, 23)], True),
+            Room("Dining Room", [(9, 14, 16, 23), (8, 8, 19, 23)], True),
             Room("Kitchen", [(0, 4, 18, 23), (5, 5, 18, 22)], True),
             Room("Ball Room", [(1, 6, 8, 15), (0, 0, 10, 13)], True),
             Room("Lobby", [(9, 15, 9, 13)], True),
@@ -83,9 +100,170 @@ class Board():
 
         # Define doors for the rooms
         self.doors = [
-            Door((4, 5), "LEFT"), Door((12, 1), "DOWN"), Door((8, 6), "LEFT"), Door((12, 3), "UP"),
-            Door((15,7), "LEFT"), Door((19,6), "UP"), Door((19,8), "RIGHT"), Door((16,11), "UP"), 
-            Door((16,12), "UP"), Door((17,17), "UP"), Door((15,17), "DOWN"), Door((11,15), "RIGHT"), 
-            Door((6,19), "DOWN"), Door((4,16), "LEFT"), Door((7,14), "DOWN"), Door((7,9), "DOWN"), 
-            Door((4,7), "RIGHT"), Door((16,11), "DOWN")
+            Door((4, 5), "LEFT", "Conservatory"), 
+            Door((12, 1), "DOWN", "Billiard Room"), 
+            Door((8, 6), "LEFT", "Billiard Room"), 
+            Door((12, 3), "UP", "Library"),
+            Door((15,7), "LEFT", "Library"), 
+            Door((19,6), "UP", "Study"), 
+            Door((19,8), "RIGHT", "Hall"), 
+            Door((16,11), "UP", "Hall"), 
+            Door((16,12), "UP", "Hall"), 
+            Door((17,17), "UP", "Lounge"), 
+            Door((15,17), "DOWN", "Dining Room"), 
+            Door((11,15), "RIGHT", "Dining Room"), 
+            Door((6,19), "DOWN", "Kitchen"), 
+            Door((4,16), "LEFT", "Ball Room"), 
+            Door((7,14), "DOWN", "Ball Room"), 
+            Door((7,9), "DOWN", "Ball Room"), 
+            Door((4,7), "RIGHT", "Ball Room"), 
+            Door((16,11), "DOWN", "Lobby")
         ]
+
+        self.player_locations =  {
+            "Miss Scarlet": [23, 16],
+            "Colonel Mustard": [16, 23],
+            "Mrs. White": [23, 7],
+            "Mr. Green": [6, 23],
+            "Mrs. Peacock": [5, 0],
+            "Professor Plum": [18, 0]
+        }
+    
+    def get_room(self, position):
+        """
+        Check if the given position (row, col) is inside any room.
+        Returns the room name if inside a room, otherwise None.
+        """
+        row, col = position
+        for room in self.rooms:
+            for boundary in room.boundaries:
+                row_start, row_end, col_start, col_end = boundary
+                if row_start <= row <= row_end and col_start <= col <= col_end:
+                    return room.name  # Position is inside this room
+        return None  # Not inside any room
+
+
+    def can_move(self, current, direction, start, goal):
+        """Check if the player can move from the current position in the specified direction."""
+        row, col = current
+        next_position = {
+            "UP": (row + 1, col),
+            "DOWN": (row - 1, col),
+            "LEFT": (row, col - 1),
+            "RIGHT": (row, col + 1),
+        }.get(direction)
+
+        opposites = {"UP": "DOWN", 
+                     "DOWN": "UP", 
+                     "LEFT": "RIGHT", 
+                     "RIGHT": "LEFT"}
+        
+        # Get names of all coordinate rooms
+        current_room = self.get_room(current)
+        next_room = self.get_room(next_position)
+        start_room = self.get_room(start)
+        goal_room = self.get_room(goal)
+
+        # Ensure next_position is within the board bounds
+        if not (0 <= next_position[0] < ROW_COUNT and 0 <= next_position[1] < COLUMN_COUNT):
+            return False  # Out of bounds
+        
+        # Check for user collision
+        for value in self.player_locations.values():
+            #_, coordinate = player.items()
+
+            if value == list(next_position):
+                return False
+
+        # Check if the move is through a door into a room
+        for door in self.doors:
+            if (row, col) == door.boundaries and door.entry_direction == direction and next_room == goal_room:
+                return True  # Move through a door
+            
+        # Check if move is through a door, out of a room
+        for door in self.doors:
+            if (next_position[0], next_position[1]) == door.boundaries and door.entry_direction == opposites[direction]:
+                return True  # Move through a door
+        
+        # Allow movement within a room if it is within a start, goal, or not a room 
+        if current_room == next_room and (next_room == start_room or next_room == goal_room or next_room == None):
+            return True
+
+        return False  # Move is not valid
+
+    
+    def heuristic(self, current, goal):
+        """Calculate the Manhattan distance heuristic."""
+        return abs(current[0] - goal[0]) + abs(current[1] - goal[1])
+
+    def get_neighbors(self, position, start, goal):
+        """Return accessible neighbors of the given position based on walls."""
+        row, col = position
+        neighbors = []
+
+        directions = {
+            "UP": (row + 1, col),
+            "DOWN": (row - 1, col),
+            "LEFT": (row, col - 1),
+            "RIGHT": (row, col + 1),
+        }
+
+        for direction, (r, c) in directions.items():
+            # Ensure within bounds and no rooms block movement
+            if 0 <= r < ROW_COUNT and 0 <= c < COLUMN_COUNT and self.can_move(position, direction, start, goal):
+                neighbors.append((r, c))
+
+        return neighbors
+
+    def a_star(self, start, goal):
+        """Find the shortest path from start to goal using A*."""
+        open_list = []
+        heapq.heappush(open_list, (0, start))  # (f_cost, position)
+
+        came_from = {}  # To reconstruct path
+        g_score = {start: 0}
+        f_score = {start: self.heuristic(start, goal)}
+
+        while open_list:
+            _, current = heapq.heappop(open_list)
+
+            if current == goal:
+                return self.reconstruct_path(came_from, current)
+
+            for neighbor in self.get_neighbors(current, start, goal):
+                tentative_g_score = g_score[current] + 1  # Cost to move to neighbor (one tile)
+
+                if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
+                    heapq.heappush(open_list, (f_score[neighbor], neighbor))
+
+        return None  # No path found
+
+    def reconstruct_path(self, came_from, current):
+        """Reconstruct the path from start to goal."""
+        path = [current]
+        while current in came_from:
+            current = came_from[current]
+            path.append(current)
+        path.reverse()
+        return path
+    
+    def get_random_goal(self):
+        """
+        Select a random accessible room as a goal and return an entry point
+        """
+        # filter rooms that are accessible
+        accessible_rooms = [room for room in self.rooms if room.accessible]
+            
+        # select a random accessible room
+        selected_room = random.choice(accessible_rooms)
+
+        # find doors associated with the selected room
+        room_doors = [door for door in self.doors if door.room_name == selected_room.name]
+
+        # select a random door for the room
+        selected_door = random.choice(room_doors)
+
+        return selected_door.boundaries[0], selected_door.boundaries[1], selected_room.name
