@@ -62,13 +62,13 @@ class Deck:
     def deal(self, num_players):
         # Create all the cards in the game
         for i in range(6):
-            suspect_card = Card("Suspect", SUSPECT_CARD_VALUES[i], CARD_SCALE)
+            suspect_card = Card("Suspects", SUSPECT_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(suspect_card)
             self.all_sprites.append(suspect_card)
-            weapon_card = Card("Weapon", WEAPON_CARD_VALUES[i], CARD_SCALE)
+            weapon_card = Card("Weapons", WEAPON_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(weapon_card)
         for i in range(9):
-            room_card = Card("Room", ROOM_CARD_VALUES[i], CARD_SCALE)
+            room_card = Card("Rooms", ROOM_CARD_VALUES[i], CARD_SCALE)
             self.all_cards.append(room_card)
 
         # Shuffle the cards
@@ -101,8 +101,6 @@ class Deck:
         for card in self.all_decks[0]:
             card.face_up()
 
-        # TODO: Assign decks to NPCs and Player
-
         # Print cards in each deck (for testing purposes)
         #print("KILLER\n****")
         #for card in self.killer_cards:
@@ -120,15 +118,15 @@ class Deck:
         weapon = False
         room = False
         for card in all_cards:
-            if card.card_type == "Suspect" and not suspect:
+            if card.card_type == "Suspects" and not suspect:
                 killer_cards.append(card)
                 all_cards.remove(card)
                 suspect = True
-            elif card.card_type == "Weapon" and not weapon:
+            elif card.card_type == "Weapons" and not weapon:
                 killer_cards.append(card)
                 all_cards.remove(card)
                 weapon = True
-            elif card.card_type == "Room" and not room:
+            elif card.card_type == "Rooms" and not room:
                 killer_cards.append(card)
                 all_cards.remove(card)
                 room = True
@@ -142,10 +140,9 @@ class Deck:
         # Loop through all cards in each deck
         for deck in decks:
             for card in deck:
-                # If card is in a deck that ISN'T the guesser's deck, return the card
-                if card in guessed_cards and card not in guessers_deck:
-                    # TODO: Add functionality for AIs and players to write this value to note sheet
-                    print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
+                # If card is in ANY deck (including the AI's), then return it
+                if card.value in guessed_cards:
+                    # print(f'The {card.card_type} card {card.value} was found from your guess at {card.position}!')
                     return True, card
 
         # The card wasn't found

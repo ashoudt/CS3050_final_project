@@ -41,7 +41,7 @@ class GameView(arcade.View):
 
         # Keep track of whose turn it currently is
         self.whose_turn = [True, False, False, False]
-        self.ai_turn_completed = False  
+        self.ai_turn_completed = False
 
         # Create the player piece
         piece_scale = 0.4
@@ -61,30 +61,31 @@ class GameView(arcade.View):
         del player_selection[self.window.character_name]
         
         # Create ai 1
-        ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
+        self.ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_1_info
         self.ai_1 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_1_name]
+        del player_selection[self.ai_card_1_name]
 
         # Create ai 2
-        ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
+        self.ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_2_info
         self.ai_2 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_2_name]
+        del player_selection[self.ai_card_2_name]
 
         # Create ai 3
-        ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
+        self.ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_3_info
         self.ai_3 = Computer(piece_image, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
-        del player_selection[ai_card_3_name]
+        del player_selection[self.ai_card_3_name]
 
         # Create a die for each player
         self.die = Die(1.25)
         self.spaces_remaining = 0
-        
+        self.player_spaces_remaining = 0
+
         # Create the deck and deal out the cards
         self.deck = Deck()
         self.num_players = 4
@@ -96,6 +97,26 @@ class GameView(arcade.View):
         self.card_padding_from_board = 20
         self.card_padding_from_cards = 20
         self.card_padding_from_edge = 20
+
+        self.ai_1_accuse_cards = []
+        self.ai_2_accuse_cards = []
+        self.ai_3_accuse_cards = []
+
+        # Create pop up window for AI suggestions
+        popup_text_x = SCREEN_HEIGHT / 2
+        popup_text_y = SCREEN_WIDTH / 2
+        self.popup_text = arcade.Text(
+            "AI Guess",
+            popup_text_x,
+            popup_text_y,
+            arcade.color.WHITE,
+            font_size=14,
+            multiline=True,
+            width=200,
+            anchor_x="center",
+            anchor_y="center"
+        )
+        self.popup_enabled = False
 
         # Position cards on the screen
         for deck in self.all_decks:
@@ -140,6 +161,18 @@ class GameView(arcade.View):
                 elif deck == self.all_decks[5]:
                     card.position = (horizontal_pos + card.card_width // 2,
                                      SCREEN_HEIGHT - card.card_height // 2 - self.card_padding_from_edge - 4 * card.card_height - 4 * self.card_padding_from_cards)
+
+        # Create the note sheet
+        self.notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
+        self.notesheet_view.set_ai_cards(self.all_decks[1], self.all_decks[2], self.all_decks[3])
+
+        # Delete the ai's old note sheet if it exists
+        ai_save_file = "ai_notesheet_state.json"
+        if os.path.exists(ai_save_file):
+            os.remove(ai_save_file)
+
+        # Save new AI note sheet file
+        self.notesheet_view.save_notes()
 
         # List for all sprites
         self.all_sprites = arcade.SpriteList()
@@ -198,7 +231,7 @@ class GameView(arcade.View):
         spaces_left_text_x = 565
         spaces_left_text_y = 30
         self.spaces_left_text = arcade.Text(
-            f"Spaces Left: {self.spaces_remaining}",
+            f"Spaces Left: {self.player_spaces_remaining}",
             spaces_left_text_x,
             spaces_left_text_y,
             arcade.color.WHITE,
@@ -236,7 +269,7 @@ class GameView(arcade.View):
         if self.whose_turn[0] == True:
             try:
                 if self.window.suspect is not None and self.window.weapon is not None and self.window.room is not None:
-                    self.spaces_remaining = 0
+                    self.player_spaces_remaining = 0
                     self.suspect = self.window.suspect
                     self.weapon = self.window.weapon
                     self.room = self.window.room
@@ -272,6 +305,10 @@ class GameView(arcade.View):
 
     # A function to flip an AI's card face down after they have refuted your guess
     def on_mouse_press(self, x, y, button, key_modifiers):
+        # Close pop up if it's open
+        if self.popup_enabled:
+            self.popup_enabled = False
+
         # Check if the user clicked on a face_up refute card
         cards = arcade.get_sprites_at_point((x, y), self.all_sprites)
 
@@ -289,22 +326,16 @@ class GameView(arcade.View):
         self.all_sprites.remove(card)
         self.all_sprites.append(card)
 
-        # TODO: check that sleep works once the game loop is implemented
-        # time.sleep(10)
-
-        # wait 10 seconds, then flip the card back over
-        # card.face_down()
-
         # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
         # self.flip_refute_card(refute_card)
 
     def on_click_roll(self, event):
         if not self.roll_disabled and self.whose_turn[0]:
-            if self.spaces_remaining == 0:
+            if self.player_spaces_remaining == 0:
                 current_die = self.die
                 current_die.roll()
-                self.spaces_remaining = current_die.value
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                self.player_spaces_remaining = current_die.value
+                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
                 self.roll_disabled = True
 
     def roll_die_for_current_player(self):
@@ -341,17 +372,16 @@ class GameView(arcade.View):
                 self.spaces_remaining = self.die.value
                 print(f"AI Player 3 rolled a {self.spaces_remaining}")
 
-
     def on_click_notesheet(self, event):
         """
         Switch to Notesheet view when button is clicked.
         """
         self.ui_manager.disable()
         if self.refute_card:
-            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), False)
+            self.notesheet_view.update_notesheet(False, self.player_piece.get_room(self.board.rooms))
         else:
-            notesheet_view = Notesheet(self, self.player_piece.get_room(self.board.rooms), self.whose_turn[0])
-        self.window.show_view(notesheet_view)
+            self.notesheet_view.update_notesheet(self.whose_turn[0], self.player_piece.get_room(self.board.rooms))
+        self.window.show_view(self.notesheet_view)
 
     def on_draw(self):
         """
@@ -379,7 +409,7 @@ class GameView(arcade.View):
                                      200, 50, arcade.color.GRAY)
             self.disabled_roll_text.draw()
 
-        if self.spaces_remaining != 0:
+        if self.player_spaces_remaining != 0:
             self.spaces_left_text.draw()
 
 
@@ -410,42 +440,51 @@ class GameView(arcade.View):
         if self.show_no_help:
             self.no_help_text.draw()
 
+        # Show AI pop up if they make a suggestion
+        if self.popup_enabled:
+            self.ui_manager.disable()
+            arcade.draw_rectangle_filled(SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2,
+                                        250, 150, arcade.color.BLACK)
+            self.popup_text.draw()
+        else:
+            self.ui_manager.enable()
+
     def on_key_press(self, key, modifiers):
         """
         Handle player movement using arrow keys.
         """
         if key == arcade.key.ESCAPE:
-            
             arcade.close_window()
             arcade.exit()
 
         elif key == arcade.key.ENTER:
             self.next_turn()
 
-        if self.spaces_remaining > 0:
+        if self.player_spaces_remaining > 0:
             last_row = self.player_piece.row
             last_col = self.player_piece.column
             if key == arcade.key.UP:
                 self.player_piece.move(1, 0, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.DOWN:
                 self.player_piece.move(-1, 0, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.LEFT:
                 self.player_piece.move(0, -1, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
+                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
             elif key == arcade.key.RIGHT:
                 self.player_piece.move(0, 1, self.board.rooms, self.board.doors, key)
                 self.update_spaces_left(last_row, last_col)
-                self.spaces_left_text.text = f"Spaces Left: {self.spaces_remaining}"
-            if self.spaces_remaining == 0:
+                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
+            if self.player_spaces_remaining == 0:
                 self.next_turn()
 
     def next_turn(self):
         if self.whose_turn[0]:
+            self.player_spaces_remaining = 0
             self.spaces_remaining = 0
             self.show_no_help = False
             self.roll_disabled = True
@@ -466,6 +505,7 @@ class GameView(arcade.View):
             self.roll_disabled = False
 
         # Reset spaces for the next player
+        self.player_spaces_remaining = 0
         self.spaces_remaining = 0 
         # Reset AI turn state
         self.ai_turn_completed = False
@@ -475,18 +515,108 @@ class GameView(arcade.View):
     def update_spaces_left(self, last_row, last_col):
         if not self.player_piece.within_a_room(self.board.rooms):
             if self.player_piece.row != last_row or self.player_piece.column != last_col:
+                self.player_spaces_remaining -= 1
                 self.spaces_remaining -= 1
 
     def on_update(self, delta_time):
         """
         Update animations and handle AI rolls.
         """
+        from GameOverView import GameOverView
+
         self.die.update_animation()
 
         # Automatically handle AI players' rolls if it's not the user's turn
-        if not self.whose_turn[0]: 
+        if self.popup_enabled:
+            pass
+        elif not self.whose_turn[0]:
             self.roll_die_for_current_player()
-            
+
+            # Once the AI rolled have them suggest/accuse if they are in a room
+            current_player_index = self.whose_turn.index(True)
+
+            # Have AI's make a suggestion, or accuse if they're ready (and able) to
+            if current_player_index == 1:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_1.ready_to_accuse:
+                    print(f"{self.ai_card_1_name} makes an accusation!")
+                    print(self.ai_1_accuse_cards)
+
+                    # End the game if an AI makes an accusation (they will always be right)
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    # Make a suggestion, show the user the suggestion, and then refute it
+                    ai_guessed_cards = self.ai_1.make_ai_suggestion(1)
+
+                    # self.notesheet_view.show_ai_suggestion(ai_guessed_cards)
+                    self.popup_text.text = f"{self.ai_card_1_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_enabled = True
+
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[1])
+
+                    # Update AI's note sheet if someone refuted their suggestion, otherwise tell
+                    # them to go and make an accusation
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 1)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 1)
+                        self.ai_1_accuse_cards = ai_guessed_cards
+                        self.ai_1.ready_to_accuse = True
+
+                self.ai_turn_completed = True
+            elif current_player_index == 2:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_2.ready_to_accuse:
+                    print(f"{self.ai_card_2_name} makes an accusation!")
+                    print(self.ai_2_accuse_cards)
+
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    ai_guessed_cards = self.ai_2.make_ai_suggestion(2)
+                    self.popup_text.text = f"{self.ai_card_2_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_enabled = True
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[2])
+
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 2)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 2)
+                        self.ai_2_accuse_cards = ai_guessed_cards
+                        self.ai_2.ready_to_accuse = True
+
+                self.ai_turn_completed = True
+            elif current_player_index == 3:
+                # TODO: modify if statement to only allow accusation while in middle room
+                if self.ai_3.ready_to_accuse:
+                    print(f"{self.ai_card_3_name} makes an accusation!")
+                    print(self.ai_3_accuse_cards)
+
+                    game_over_view = GameOverView(False)
+                    self.window.show_view(game_over_view)
+                # TODO: modify this to only make a suggestion if AI is in a room
+                else:
+                    ai_guessed_cards = self.ai_3.make_ai_suggestion(3)
+                    self.popup_text.text = f"{self.ai_card_3_name} Suggests: {ai_guessed_cards[0]} in the {ai_guessed_cards[1]} with the {ai_guessed_cards[2]}\n(Click to continue)"
+                    self.popup_enabled = True
+                    refuted, refute_card = self.deck.refute_guess(ai_guessed_cards, self.all_decks, self.all_decks[3])
+
+                    if refuted:
+                        self.notesheet_view.update_refute_card(refute_card, 3)
+                    else:
+                        # TODO: Tell the AI to go to the middle room to make an accusation
+                        self.notesheet_view.update_accusation(ai_guessed_cards, 3)
+                        self.ai_3_accuse_cards = ai_guessed_cards
+                        self.ai_3.ready_to_accuse = True
+                self.ai_turn_completed = True
+            else:
+                print("invalid ai index, cannot play their turn")
+
             # If the AI has rolled, proceed to the next turn
             if self.ai_turn_completed:
                 self.next_turn()
@@ -497,13 +627,16 @@ class GameView(arcade.View):
         Reset the notesheet on window close
         """
         save_file = "notesheet_state.json"
+        ai_save_file = "ai_notesheet_state.json"
 
         # Disable the UI manager and delete the save file
         self.ui_manager.disable()
 
-        # Delete the notesheet save file to reset the state
+        # Delete the notesheet save file (for player and ai) to reset the state
         if os.path.exists(save_file):
             os.remove(save_file)
+        if os.path.exists(ai_save_file):
+            os.remove(ai_save_file)
 
 def main():
     """ Main function """

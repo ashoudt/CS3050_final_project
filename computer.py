@@ -1,4 +1,8 @@
+import random
+
 import arcade
+from board import Board
+from notesheet import Notesheet
 
 # Set number of rows and columns for the board grid
 ROW_COUNT = 24
@@ -21,6 +25,18 @@ class Computer(arcade.Sprite):
 
         # Update initial position
         self.update_position()
+
+        # Create variables for suggestion/accusations
+        self.suspect_guess = ""
+        self.weapon_guess = ""
+        self.room_guess = ""
+
+        # Create a board and note sheet to keep track of AI's known values
+        self.board = Board()
+        self.ai_notesheet = Notesheet(self, "N/A", False)
+
+        self.ready_to_accuse = False
+
 
     def update_position(self):
         """
@@ -110,3 +126,54 @@ class Computer(arcade.Sprite):
                 if row_start <= self.row <= row_end and col_start <= self.column <= col_end:
                     return room.name
         return "N/A"
+
+    def make_ai_suggestion(self, curr_ai):
+        # Make sure the AI is within a room AND set that room to their suggestion
+        current_room = self.get_room(self.board.rooms)
+
+        # TODO: need to fully implement validating a room once AI movement is implemented (uncomment below)
+        # If AI is not currently in a room, then don't make a guess
+        # if current_room == "N/A":
+        #     print("ai not in a room, can't make a guess")
+        #     return "Not in a room, can't make a guess"
+        # self.room_guess = current_room
+
+        # Look at all the AI's non-marked (blank) suspects and weapons and randomly
+        # choose one to guess (set state == suggest)
+        # Re-read the .JSON file everytime we make a guess, update notesheet accordingly
+        self.ai_notesheet.load_notes()
+        current_grid_state = self.ai_notesheet.get_ai_notesheet(curr_ai)
+
+        # TODO: delete this once validating a room works
+        possible_rooms = ["Conservatory"]
+        for room in current_grid_state["Rooms"]:
+            suspect_state = current_grid_state["Rooms"][room]
+            if str(suspect_state) == "NotesheetBox.BLANK":
+                possible_rooms.append(room)
+        random.shuffle(possible_rooms)
+        self.room_guess = possible_rooms[0]
+        # TODO: end of section to delete
+
+        # Have default values in case there are no more new values to guess of a category
+        possible_suspects = ["Mr. Green"]
+        possible_weapons = ["Rope"]
+
+        for suspect in current_grid_state["Suspects"]:
+            suspect_state = current_grid_state["Suspects"][suspect]
+            if str(suspect_state) == "NotesheetBox.BLANK":
+                possible_suspects.append(suspect)
+
+        for weapon in current_grid_state["Weapons"]:
+            suspect_state = current_grid_state["Weapons"][weapon]
+            if str(suspect_state) == "NotesheetBox.BLANK":
+                possible_weapons.append(weapon)
+
+        # Shuffle the un-marked values and choose one
+        random.shuffle(possible_suspects)
+        random.shuffle(possible_weapons)
+        self.suspect_guess = possible_suspects[0]
+        self.weapon_guess = possible_weapons[0]
+
+        # Make the suggestion and return those cards (so driver can call deck functions)
+        # print(f"Suggestion: {self.suspect_guess} in the {self.room_guess} with the {self.weapon_guess}")
+        return self.suspect_guess, self.room_guess, self.weapon_guess
