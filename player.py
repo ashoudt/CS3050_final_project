@@ -45,22 +45,25 @@ class Player(arcade.Sprite):
         """Move the player by a row or column delta, but check room boundaries and door access."""
         new_row = self.row + d_row
         new_column = self.column + d_column
+        
+        # Check if the player is attempting to enter or exit a room through a non-door point
+        current_in_room, current_room = self.check_room_collision(self.row, self.column, rooms)
+        new_in_room, new_room = self.check_room_collision(new_row, new_column, rooms)
 
         # Check for collisions with other players
         for player_name, location in player_locations.items():
             if player_name != self.character_name and location == [new_row, new_column]:
-                print(f"Collision detected with {player_name} at ({new_row}, {new_column})")
-                return  # Stop movement due to collision
+                if current_in_room:
+                    continue
+                else:
+                    print(f"Collision detected with {player_name} at ({new_row}, {new_column})")
+                    return  # Stop movement due to collision
 
         # Set opposites for leaving a room
         opposites = {"UP": "DOWN", 
                      "DOWN": "UP", 
                      "LEFT": "RIGHT", 
                      "RIGHT": "LEFT"}
-
-        # Check if the player is attempting to enter or exit a room through a non-door point
-        current_in_room, current_room = self.check_room_collision(self.row, self.column, rooms)
-        new_in_room, new_room = self.check_room_collision(new_row, new_column, rooms)
 
         # Leaving room case
         if current_in_room and not new_in_room:

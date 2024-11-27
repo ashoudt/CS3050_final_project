@@ -61,12 +61,11 @@ class Computer(arcade.Sprite):
         self.center_x = board_bottom_left_x + (cell_width * self.column) + (cell_width / 2)
         self.center_y = board_bottom_left_y + (cell_height * self.row) + (cell_height / 2)
 
-    
-    def move(self, coordinate):
-       
-       self.row, self.column = coordinate
 
-       self.update_position()
+    def move(self, coordinate):       
+        self.row, self.column = coordinate
+
+        self.update_position()
 
     def within_a_room(self, rooms):
         """Check if the player is inside a room"""

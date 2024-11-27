@@ -32,8 +32,8 @@ class Room:
         """
         self.name = name
         self.boundaries = boundaries
-        self.accessible = accessible
-    
+        self.accessible = accessible    
+
 
 class Door:
     def __init__(self, boundaries, entry_direction, room_name):
@@ -89,7 +89,7 @@ class Board():
             Room("Dining Room", [(9, 14, 16, 23), (8, 8, 19, 23)], True),
             Room("Kitchen", [(0, 4, 18, 23), (5, 5, 18, 22)], True),
             Room("Ball Room", [(1, 6, 8, 15), (0, 0, 10, 13)], True),
-            Room("Lobby", [(9, 15, 9, 13)], True),
+            Room("Lobby", [(9, 15, 9, 13)], False),
             Room("Outside", [(0, 0, 6, 6), (6, 6, 0, 0), (5, 5, -1, -1), (4, 4, 0, 0), (12, 12, 0, 0), (13, 13, 0, 0),
                              (17, 17, 0, 0), (19, 19, 0, 0), (23, 23, 6, 6), (23, 23, 8, 8), (23, 23, 9, 9),
                              (23, 23, 14, 14), (23, 23, 15, 15), (23, 23, 17, 17), (17, 17, 23, 23), (15, 15, 23, 23),
@@ -128,7 +128,7 @@ class Board():
             "Mrs. Peacock": [5, 0],
             "Professor Plum": [18, 0]
         }
-    
+
     def get_room(self, position):
         """
         Check if the given position (row, col) is inside any room.
@@ -255,7 +255,7 @@ class Board():
         Select a random accessible room as a goal and return an entry point
         """
         # filter rooms that are accessible
-        accessible_rooms = [room for room in self.rooms if room.accessible]
+        accessible_rooms = [room for room in self.rooms if room.accessible and room.name != "Lobby"]
             
         # select a random accessible room
         selected_room = random.choice(accessible_rooms)
