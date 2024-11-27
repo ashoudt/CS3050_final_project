@@ -362,6 +362,16 @@ class GameView(arcade.View):
 
                 print(f"{current_ai.character_name} rolled a {current_ai.spaces_remaining}")
 
+                # If the AI is currently in a room and has spaces to move, exit the room
+                if current_ai.within_a_room(self.board.rooms):
+                    print(f"{current_ai.character_name} is inside a room and will attempt to exit.")
+                    for door in self.board.doors:
+                        if door.room_name == current_ai.get_room(self.board.rooms):
+                            current_ai.move(door.boundaries)
+                            current_ai.spaces_remaining -= 1
+                            print(f"{current_ai.character_name} exited the room to {door.boundaries}")
+                            break
+
                 # if no goal or the goal is reached, select a new goal
                 if current_ai.goal is None or current_ai.has_reached_goal(self.board):
                     # select a new random goal room
@@ -396,7 +406,7 @@ class GameView(arcade.View):
                                 current_ai.move(room_entry)  # move into the room
                                 current_ai.spaces_remaining = 0  # stop further movement
                                 break
-
+                
                 # if the AI has reached its goal, clear the goal
                 if current_ai.has_reached_goal(self.board):
                     print(f"{current_ai.character_name} has entered {goal_room}.")
@@ -454,8 +464,6 @@ class GameView(arcade.View):
         triangle_y3 = triangle_y1 - 15
         if self.whose_turn[0]:
             pass
-            # if self.spaces_remaining == 0:
-                # self.roll_disabled = False
         else:
             offset_factor = 1
             for i in range(0, len(self.whose_turn)):

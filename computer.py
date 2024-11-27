@@ -106,6 +106,15 @@ class Computer(arcade.Sprite):
                 if row_start <= self.row <= row_end and col_start <= self.column <= col_end:
                     return room.name
         return "N/A"
+    
+    def move_out_of_room(self, board):
+        current_room = self.get_room(self.board.rooms)
+        if current_room != "N/A":
+            # Find the nearest door to exit the room
+            for door in board.doors:
+                if door.room_name == current_room:
+                    self.move(door.boundaries)
+                    break
 
     def make_ai_suggestion(self, curr_ai):
         # Make sure the AI is within a room AND set that room to their suggestion
