@@ -86,7 +86,6 @@ class Player(arcade.Sprite):
                     break
             print(f"IN ROOM ROW: {self.row}, COL: {self.column}\n")
             return
-        
 
         # Free movement within the same space (either inside a room or outside)
         if current_in_room == new_in_room and current_room == new_room:
