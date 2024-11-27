@@ -65,21 +65,21 @@ class GameView(arcade.View):
         # Create ai 1
         self.ai_card_1_name, ai_card_1_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_1_info
-        self.ai_1 = Computer(piece_image, ai_card_1_name, piece_scale, starting_x, starting_y,
+        self.ai_1 = Computer(piece_image, self.ai_card_1_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_1_name]
 
         # Create ai 2
         self.ai_card_2_name, ai_card_2_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_2_info
-        self.ai_2 = Computer(piece_image, ai_card_2_name, piece_scale, starting_x, starting_y,
+        self.ai_2 = Computer(piece_image, self.ai_card_2_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_2_name]
 
         # Create ai 3
         self.ai_card_3_name, ai_card_3_info = random.choice(list(player_selection.items()))
         piece_image, starting_x, starting_y = ai_card_3_info
-        self.ai_3 = Computer(piece_image, ai_card_3_name, piece_scale, starting_x, starting_y,
+        self.ai_3 = Computer(piece_image, self.ai_card_3_name, piece_scale, starting_x, starting_y,
                                    self.board_size, self.board_center_x, self.board_center_y)
         del player_selection[self.ai_card_3_name]
 
