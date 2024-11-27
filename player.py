@@ -16,6 +16,8 @@ class Player(arcade.Sprite):
         self.board_center_y = board_center_y
 
         self.character_name = character_name
+        
+        self.entered_room_this_turn = False
 
         # Initial position
         self.row = start_row
@@ -40,7 +42,10 @@ class Player(arcade.Sprite):
         self.center_x = board_bottom_left_x + (cell_width * self.column) + (cell_width / 2)
         self.center_y = board_bottom_left_y + (cell_height * self.row) + (cell_height / 2)
 
-    
+    def reset_room_entry_flag(self):
+        """Reset the entered_room_this_turn flag for the new turn."""
+        self.entered_room_this_turn = False
+        
     def move(self, d_row, d_column, rooms, doors, player_locations, key):
         """Move the player by a row or column delta, but check room boundaries and door access."""
         new_row = self.row + d_row
@@ -67,6 +72,8 @@ class Player(arcade.Sprite):
 
         # Leaving room case
         if current_in_room and not new_in_room:
+            if self.entered_room_this_turn:
+                return # stop movement
             for door in doors:
                 opposite_direction = opposites[door.entry_direction]
                 expected_key = getattr(arcade.key, opposite_direction, None)
@@ -81,6 +88,7 @@ class Player(arcade.Sprite):
         # Entering room case
         if not current_in_room and new_in_room:
             for door in doors:
+                self.entered_room_this_turn = True
                 expected_key = getattr(arcade.key, door.entry_direction.upper(), None)
                 if (self.row, self.column) == door.boundaries and key == expected_key:
                     self.row = new_row

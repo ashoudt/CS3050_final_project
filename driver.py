@@ -4,7 +4,6 @@ from deck import Deck
 from die import Die
 from notesheet import Notesheet
 from computer import Computer
-import time
 import random
 import arcade
 import arcade.gui
@@ -13,7 +12,7 @@ import os
 # Screen dimensions
 SCREEN_WIDTH = 750
 SCREEN_HEIGHT = 750
-SCREEN_TITLE = "Clue Game Board with Piece Movement"
+SCREEN_TITLE = "Clue Game"
 
 # Font Styling
 DEFAULT_FONT_SIZE = 20
@@ -21,13 +20,13 @@ DEFAULT_FONT_SIZE = 20
 
 class GameView(arcade.View):
     def __init__(self):
-        """
-        Set up the application.
-        """
         super().__init__()
         self.setup()
 
     def setup(self):
+        """
+        Set up the application.
+        """
         self.window.suspect = None
         self.window.weapon = None
         self.window.room = None
@@ -329,17 +328,26 @@ class GameView(arcade.View):
         self.all_sprites.remove(card)
         self.all_sprites.append(card)
 
-        # Example of calling flip_refute_card (goes with the refute_guess example [in deck.py])
-        # self.flip_refute_card(refute_card)
-
     def on_click_roll(self, event):
+        """
+        Handle roll for user
+        """
         if not self.roll_disabled and self.whose_turn[0]:
             if self.player_spaces_remaining == 0:
                 current_die = self.die
                 current_die.roll()
-                self.player_spaces_remaining = current_die.value
-                self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
+                # Wait for rolling to finish before updating spaces
+                arcade.schedule(self.update_spaces_after_roll, 0.1)
                 self.roll_disabled = True
+
+    def update_spaces_after_roll(self, delta_time):
+        """
+        Update spaces_remaining after die roll animation completes.
+        """
+        if not self.die.is_rolling:
+            self.player_spaces_remaining = self.die.spaces_remaining
+            self.spaces_left_text.text = f"Spaces Left: {self.player_spaces_remaining}"
+            arcade.unschedule(self.update_spaces_after_roll)
 
     def roll_die_for_current_player(self):
         """
@@ -521,12 +529,16 @@ class GameView(arcade.View):
                 self.next_turn()
 
     def next_turn(self):
+        """
+        Handle player turns
+        """
 
         if self.whose_turn[0]:
             self.player_spaces_remaining = 0
             self.spaces_remaining = 0
             self.show_no_help = False
             self.roll_disabled = True
+            self.player_piece.reset_room_entry_flag()
             if self.refute_card:
                 self.refute_card.face_down()
                 self.refute_card = None
@@ -556,6 +568,9 @@ class GameView(arcade.View):
         self.ai_turn_completed = False
 
     def update_spaces_left(self, last_row, last_col):
+        """
+        Update the number of moveable spaces left
+        """
         if not self.player_piece.within_a_room(self.board.rooms):
             if self.player_piece.row != last_row or self.player_piece.column != last_col:
                 self.player_spaces_remaining -= 1
@@ -610,8 +625,8 @@ class GameView(arcade.View):
                         self.notesheet_view.update_accusation(ai_guessed_cards, 1)
                         self.ai_1_accuse_cards = ai_guessed_cards
                         self.ai_1.ready_to_accuse = True
-
                 self.ai_turn_completed = True
+
             elif current_player_index == 2:
                 current_room = self.ai_2.get_room(self.board.rooms)
                 if self.ai_2.ready_to_accuse and current_room == "Lobby":
@@ -636,6 +651,7 @@ class GameView(arcade.View):
                         self.ai_2.ready_to_accuse = True
                         
                 self.ai_turn_completed = True
+
             elif current_player_index == 3:
                 current_room = self.ai_3.get_room(self.board.rooms)
                 if self.ai_3.ready_to_accuse and current_room == "Lobby":
