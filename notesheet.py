@@ -9,7 +9,7 @@ SCREEN_WIDTH = 750
 SCREEN_HEIGHT = 750
 GRID_CELL_SIZE = 50
 GRID_MARGIN = 10
-TEXT_AREA_WIDTH = 450
+TEXT_AREA_WIDTH = 300
 TEXT_AREA_HEIGHT = 200
 
 # File to save/load notes
@@ -85,7 +85,6 @@ class Notesheet(arcade.View):
             "Rooms": {room: NotesheetBox.BLANK for room in ROOMS},
         }
 
-        # TODO: AI notesheet (need for all three!!)
         self.ai_grid_state_1 = {
             "Suspects": {suspect: NotesheetBox.BLANK for suspect in SUSPECTS},
             "Weapons": {weapon: NotesheetBox.BLANK for weapon in WEAPONS},
@@ -157,6 +156,49 @@ class Notesheet(arcade.View):
             child=self.return_button
         ))
 
+        # Key for colors
+        mark_text_x = 455
+        mark_text_y = 260
+        self.mark_text = arcade.Text(
+            "Green is used to mark cards you know are incorrect",
+            mark_text_x,
+            mark_text_y,
+            arcade.color.LIGHT_GREEN,
+            font_size=14,
+            multiline=True,
+            width=175,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        suggest_text_x = 455
+        suggest_text_y = 190
+        self.suggest_text = arcade.Text(
+            "Orange is used for suggestions",
+            suggest_text_x,
+            suggest_text_y,
+            arcade.color.ORANGE,
+            font_size=14,
+            multiline=True,
+            width=175,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
+        accuse_text_x = 455
+        accuse_text_y = 130
+        self.accuse_text = arcade.Text(
+            "Red is used for accusations",
+            accuse_text_x,
+            accuse_text_y,
+            arcade.color.RED,
+            font_size=14,
+            multiline=True,
+            width=175,
+            anchor_x="center",
+            anchor_y="center"
+        )
+
         popup_text_x = SCREEN_HEIGHT / 2
         popup_text_y = SCREEN_WIDTH / 2
         self.popup_text = arcade.Text(
@@ -219,6 +261,12 @@ class Notesheet(arcade.View):
         self.draw_grid_section("Suspects", SUSPECTS, 50, SCREEN_HEIGHT - 50)
         self.draw_grid_section("Weapons", WEAPONS, 300, SCREEN_HEIGHT - 50)
         self.draw_grid_section("Rooms", ROOMS, 550, SCREEN_HEIGHT - 50)
+
+        arcade.draw_rectangle_filled(450, 200,
+                                     175, 200, arcade.color.BLACK)
+        self.mark_text.draw()
+        self.suggest_text.draw()
+        self.accuse_text.draw()
         
         # Draw a border around the text area
         text_area_x = 50 + TEXT_AREA_WIDTH // 2
@@ -316,7 +364,7 @@ class Notesheet(arcade.View):
         if 'Suspects' in guess or 'Weapons' in guess or 'Rooms' in guess:
             valid_guess = False
             self.popup_text.text = f"Didn't select one item from each category\n(Click to continue)"
-        if method == 'SUGGEST' and guess[2] != self.player_room:
+        if method == 'SUGGEST' and guess[2] != self.player_room and guess[2] != 'Rooms':
             valid_guess = False
             self.popup_text.text = f"Not in the room you're suggesting\n(Click to continue)"
         if method == 'ACCUSE' and self.player_room != 'Lobby':
